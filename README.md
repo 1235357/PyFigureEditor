@@ -29,8 +29,9 @@
 
 ## **[https://zye.pythonanywhere.com/](https://zye.pythonanywhere.com/)**
 
-*Click the link above to experience the fully functional application without any installation.*
+*Use the link above to experience the fully functional application without installation, **and the one below for the Colab experiment version**.*
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/1235357/PyFigureEditor/blob/main/Final_Project_Implementation.ipynb)
 
 
 </div>
