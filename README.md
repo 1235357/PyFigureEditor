@@ -1,10 +1,8 @@
-# PyFigureEditor: A Python-Based Interactive Scientific Visualization Platform with MATLAB-Style Editing Capabilities
+# PyFigureEditor: A Python-Based Interactive Visualization GUI with MATLAB-Style Editing Capabilities
 
 <div align="center">
 
 ## MATH 4710 - Final Project Report
-
-### A Comprehensive Technical Documentation and Project Report
 
 ---
 
