@@ -32,6 +32,8 @@
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/1235357/PyFigureEditor/blob/main/Final_Project_Implementation.ipynb)
 
 
+## 💻 Live Learning in Chinese [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/1235357/PyFigureEditor/blob/main/LEARNING_Project_Implementation.ipynb)
+
 </div>
 
 ---
@@ -55,6 +57,9 @@
 | [Part 10: Summary](#-part-10-technical-achievement-summary) | → [Section 1.4: Scope and Deliverables](#14-scope-and-deliverables) |
 
 ---
+
+<img width="3839" height="1944" alt="image" src="https://github.com/user-attachments/assets/b61cf9d3-1e66-4f95-aabd-dbf28150d110" />
+
 
 ## 📌 Part 1: Project Overview (What & Why)
 
