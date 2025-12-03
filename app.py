@@ -183,7 +183,10 @@ np.random.seed(42)
 # suppress_callback_exceptions=True is required for dynamic components (like the Inspector)
 # Use a unique name to avoid "setup method called after start" errors on re-run
 app_name = f"Interactive_Editor_{uuid.uuid4().hex[:8]}"
-app = dash.Dash(app_name, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
+# Use a China-friendly CDN for Bootstrap to ensure styles load correctly
+# Original: external_stylesheets=[dbc.themes.BOOTSTRAP]
+bootstrap_css = "https://cdn.staticfile.org/twitter-bootstrap/5.3.2/css/bootstrap.min.css"
+app = dash.Dash(app_name, external_stylesheets=[bootstrap_css], suppress_callback_exceptions=True)
 
 # Expose application for WSGI
 application = app.server
@@ -843,13 +846,30 @@ print("✅ Core engine ready.")
 
 ribbon = dbc.Card([
     dbc.CardHeader(
-        dbc.Tabs([
-            dbc.Tab(label="HOME", tab_id="tab-home", label_style={"fontWeight": "bold", "fontSize": "13px"}),
-            dbc.Tab(label="DATA", tab_id="tab-data", label_style={"fontWeight": "bold", "fontSize": "13px"}),
-            dbc.Tab(label="PLOTS", tab_id="tab-plots", label_style={"fontWeight": "bold", "fontSize": "13px"}),
-            dbc.Tab(label="ANNOTATE", tab_id="tab-annotate", label_style={"fontWeight": "bold", "fontSize": "13px"}),
-            dbc.Tab(label="VIEW", tab_id="tab-view", label_style={"fontWeight": "bold", "fontSize": "13px"}),
-        ], id="ribbon-tabs", active_tab="tab-home", className="nav-tabs-bottom"),
+        dbc.Row([
+            dbc.Col(
+                dbc.Tabs([
+                    dbc.Tab(label="HOME", tab_id="tab-home", label_style={"fontWeight": "bold", "fontSize": "13px"}),
+                    dbc.Tab(label="DATA", tab_id="tab-data", label_style={"fontWeight": "bold", "fontSize": "13px"}),
+                    dbc.Tab(label="PLOTS", tab_id="tab-plots", label_style={"fontWeight": "bold", "fontSize": "13px"}),
+                    dbc.Tab(label="ANNOTATE", tab_id="tab-annotate", label_style={"fontWeight": "bold", "fontSize": "13px"}),
+                    dbc.Tab(label="VIEW", tab_id="tab-view", label_style={"fontWeight": "bold", "fontSize": "13px"}),
+                ], id="ribbon-tabs", active_tab="tab-home", className="nav-tabs-bottom"),
+                width="auto"
+            ),
+            dbc.Col(
+                html.A(
+                    [html.Span("GitHub Repo ", className="me-1"), html.Span("🐙")],
+                    href="https://github.com/1235357/PyFigureEditor",
+                    target="_blank",
+                    className="text-muted text-decoration-none small fw-bold d-flex align-items-center mb-1",
+                    title="View source code on GitHub",
+                    style={"fontSize": "12px"}
+                ),
+                width="auto",
+                className="ms-auto pe-2"
+            )
+        ], align="end", className="g-0"),
         className="pb-0 border-bottom-0 bg-light pt-1"
     ),
     dbc.CardBody([
@@ -872,6 +892,10 @@ ribbon = dbc.Card([
                         dbc.Button("↶ Undo", id="btn-undo", color="link", size="sm", disabled=True, className="text-decoration-none text-dark"),
                         dbc.Button("↷ Redo", id="btn-redo", color="link", size="sm", disabled=True, className="text-decoration-none text-dark"),
                     ], vertical=True)
+                ], width="auto", className="border-end pe-2"),
+                dbc.Col([
+                    html.Div("Info", className="text-muted small fw-bold mb-1 text-center", style={"fontSize": "10px"}),
+                    dbc.Button([html.Div("ℹ️", className="h4 mb-0"), "About"], id="btn-open-about", color="light", size="sm", className="d-flex flex-column align-items-center px-3 border-0"),
                 ], width="auto"),
             ], align="center")
         ], style={"display": "block"}),
@@ -1061,7 +1085,7 @@ workspace_panel = dbc.Card([
         html.Div(id="workspace-content-cmd", children=[
             dcc.Textarea(
                 id='code-editor',
-                value="# Python Command Window\n# Select a dataset and click a plot button...",
+                value="# Python Command Window\n# Select a dataset and click a plot button...\n# Visit https://github.com/1235357/PyFigureEditor for source code.",
                 style={'width': '100%', 'height': '300px', 'fontFamily': 'Consolas, monospace', 'fontSize': '13px', 'backgroundColor': '#f8f9fa', 'border': '1px solid #dee2e6'},
                 className="mb-2"
             ),
@@ -1130,6 +1154,36 @@ annotation_modal = dbc.Modal([
     )
 ], id="modal-annotation", is_open=False)
 
+# --- About Modal ---
+about_modal = dbc.Modal([
+    dbc.ModalHeader(dbc.Row([
+        dbc.Col(html.Div("🐙", className="h2 mb-0 me-2"), width="auto"),
+        dbc.Col(html.H4("About PyFigureEditor", className="mb-0"), width="auto"),
+    ], align="center", className="g-0")),
+    dbc.ModalBody([
+        html.Div([
+            html.P("A powerful, interactive figure editor built with Dash & Plotly.", className="lead"),
+            html.Hr(),
+            html.P([
+                "This application allows you to import data, create complex visualizations, ",
+                "annotate them with shapes and text, and export the results as high-quality figures or Python code."
+            ]),
+            html.Div([
+                html.Span("Source Code: ", className="fw-bold"),
+                html.A("https://github.com/1235357/PyFigureEditor", href="https://github.com/1235357/PyFigureEditor", target="_blank")
+            ], className="mb-3"),
+            dbc.Alert([
+                html.H6("Credits", className="alert-heading"),
+                html.P("Designed for MATH 4710 Final Project.", className="mb-0 small"),
+                html.P("Powered by Dash, Plotly, and Pandas.", className="mb-0 small"),
+            ], color="info", className="mb-0")
+        ])
+    ]),
+    dbc.ModalFooter(
+        dbc.Button("Close", id="btn-close-about", className="ms-auto", n_clicks=0)
+    )
+], id="modal-about", is_open=False, size="lg")
+
 # --- Main Layout ---
 app.layout = html.Div([
     dcc.Store(id='figure-store-client', data=figure_store.get_figure_dict()),
@@ -1167,6 +1221,7 @@ app.layout = html.Div([
     ], fluid=True, className="px-0 h-100"),
     
     annotation_modal,
+    about_modal,
     
 ], style={"height": "100vh", "overflow": "hidden", "backgroundColor": "#f4f6f8"})
 
@@ -1691,6 +1746,10 @@ def execute_code(signal, n_clicks, code, current_console):
         if "fig" in local_scope:
             fig = local_scope["fig"]
             if isinstance(fig, go.Figure):
+                # Push current state to history before updating
+                if figure_store.figure:
+                    history_stack.push(figure_store.get_figure_dict())
+                
                 figure_store.update_figure(fig)
                 return fig, f"{current_console}\n>>> Code executed successfully."
             else:
@@ -1759,6 +1818,10 @@ def apply_property_changes(n_clicks, selected_element, name, color, size, opacit
         raise PreventUpdate
         
     fig_dict = clean_figure_dict(fig_dict)
+    
+    # Push history before applying changes
+    history_stack.push(fig_dict)
+    
     fig = go.Figure(fig_dict)
     
     # Collect valid updates
@@ -1953,6 +2016,10 @@ def delete_element(n_clicks, selected_element):
     
     if selected_element == "figure":
         return dash.no_update, dash.no_update
+
+    # Push history before deletion
+    if figure_store.figure:
+        history_stack.push(figure_store.get_figure_dict())
 
     if selected_element.startswith("trace_"):
         idx = int(selected_element.split("_")[1])
@@ -2360,6 +2427,10 @@ def sync_drawn_shapes(relayout_data, fig_dict):
     if 'shapes' in relayout_data:
         # This happens when a shape is drawn or modified
         fig_dict = clean_figure_dict(fig_dict)
+        
+        # Push history
+        history_stack.push(fig_dict)
+        
         fig = go.Figure(fig_dict)
         fig.layout.shapes = relayout_data['shapes']
         
@@ -2370,6 +2441,17 @@ def sync_drawn_shapes(relayout_data, fig_dict):
         return fig.to_dict(), fig
         
     return dash.no_update, dash.no_update
+
+@app.callback(
+    Output("modal-about", "is_open"),
+    Input("btn-open-about", "n_clicks"),
+    Input("btn-close-about", "n_clicks"),
+    State("modal-about", "is_open"),
+    prevent_initial_call=True
+)
+def toggle_about_modal(n1, n2, is_open):
+    if n1 or n2: return not is_open
+    return is_open
 
 @app.callback(
     Output("modal-annotation", "is_open"),
@@ -2435,6 +2517,10 @@ def add_background_image(content, fig_dict):
         raise PreventUpdate
         
     fig_dict = clean_figure_dict(fig_dict)
+    
+    # Push history
+    history_stack.push(fig_dict)
+    
     fig = go.Figure(fig_dict)
     
     # Add image to layout
