@@ -38,17 +38,851 @@
 
 ---
 
+# 🎯 Quick Guide (Complete Code Architecture Analysis)
+
+
+## 📋 Quick Navigation: Guide ↔ Report Mapping
+
+| Quick Guide Section | Click to Jump to Detailed Report |
+|---------------------|----------------------------------|
+| [Part 1: Project Overview](#-part-1-project-overview-what--why) | → [Section 1: Introduction (Full Details)](#1-introduction) |
+| [Part 2: Code Architecture](#-part-2-code-architecture-overview) | → [Section 3: System Architecture](#3-system-architecture-and-design) |
+| [Part 3: Four Core Classes](#-part-3-four-core-classes-explained) | → [Section 3.2: Core Class Design](#32-core-class-design) |
+| [Part 4: Callback System](#-part-4-callback-system-deep-dive) | → [Section 4.3: Callback Implementation](#43-callback-implementation---the-brain-of-the-application) |
+| [Part 5: UI Layout](#-part-5-ui-layout-architecture) | → [Section 4.2: Layout Implementation](#42-layout-implementation---building-the-user-interface) |
+| [Part 6: Data Flow Example](#-part-6-complete-data-flow-example) | → [Section 3.5: Data Flow Architecture](#35-data-flow-architecture) |
+| [Part 7: Technical Points](#-part-7-key-technical-points) | → [Section 2.4: Reactive Programming](#24-reactive-programming-paradigm) |
+| [Part 8: Demo Workflow](#-part-8-suggested-demo-workflow) | → [Section 5: Feature Documentation](#5-complete-feature-documentation---your-user-manual) |
+| [Part 9: Q&A](#-part-9-common-questions-qa) | → [Section 2: Literature Review](#2-literature-review-and-technical-foundation) |
+| [Part 10: Summary](#-part-10-technical-achievement-summary) | → [Section 1.4: Scope and Deliverables](#14-scope-and-deliverables) |
+
+---
+
+## 📌 Part 1: Project Overview (What & Why)
+
+> 📖 **Want more details?** See [Section 1: Introduction](#1-introduction) in the Full Report below.
+
+### 🤔 What Problem Does This Project Solve?
+
+**The Pain Point of Traditional Python Plotting:**
+
+```python
+# Traditional way: Every modification requires code changes and re-running
+import matplotlib.pyplot as plt
+plt.plot([1,2,3], [4,5,6], color='blue')  # Want to change to red?
+plt.show()
+
+# To change the color, you must:
+# 1. Go back to the code
+# 2. Change color='red'  
+# 3. Re-run the entire script
+# 4. View result... not satisfied? Repeat the above steps 😫
+```
+
+**My Solution: PyFigureEditor**
+
+```
+No code changes needed! Click on chart → Select element → Modify properties → Instant effect!
+As simple as editing images in PowerPoint ✨
+```
+
+### 🎯 Core Features Overview
+
+| Feature | User Action | Technical Implementation Behind | 📖 Learn More |
+|---------|-------------|--------------------------------|---------------|
+| **Create Charts** | Select chart type → Click button | `px.scatter()`, `go.Figure()` generates Plotly chart | [5.1 Plot Types](#51-plot-types-and-chart-creation---your-26-chart-arsenal) |
+| **Edit Properties** | Select element → Change color/size → Apply | Callback listens → Modifies `fig.data[i]` → Returns new chart | [5.2 Property Editing](#52-property-editing-system---fine-tune-everything) |
+| **Draw Shapes** | Click "Draw Rectangle" → Drag on chart | `fig.update_layout(dragmode="drawrect")` | [5.3 Drawing Tools](#53-drawing-and-annotation-tools---make-your-charts-talk) |
+| **Undo/Redo** | Click Undo/Redo | `HistoryStack` class stores history states | [5.7 Undo/Redo](#57-undoredo-system---never-lose-your-work) |
+| **Save Session** | Click Save → Download JSON | `fig.to_dict()` serializes to JSON | [5.5 Session Management](#55-session-management---save-and-share-your-work) |
+| **Generate Code** | Auto-generate Python code | `CodeGenerator` class reverse-generates code | [5.6 Code Export](#56-code-export---take-your-work-anywhere) |
+
+---
+
+## 📌 Part 2: Code Architecture Overview
+
+> 📖 **Want more details?** See [Section 3: System Architecture and Design](#3-system-architecture-and-design) for complete architecture diagrams and design decisions.
+
+### 🗂️ File Structure
+
+```
+Final Project/
+├── app.py                              # Main application (2696 lines)
+├── Final_Project_Implementation.ipynb  # Jupyter version (same logic)
+└── README.md                           # This document
+```
+
+### 🏗️ `app.py` Code Organization (By Line Numbers)
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  SECTION 0: Auto Dependency Installation (Lines 1-155)                  │
+│  ├── AUTO_DEPENDENCY_MAP: Defines required packages                     │
+│  └── _auto_install_dependencies(): Auto pip install                     │
+├─────────────────────────────────────────────────────────────────────────┤
+│  SECTION 1-2: Library Imports & Core Data Model (Lines 156-270)         │
+│  ├── TraceDataset: Data container for a single chart layer              │
+│  └── Initialize Dash App                                                │
+├─────────────────────────────────────────────────────────────────────────┤
+│  SECTION 3: FigureStore State Management (Lines 271-565)                │
+│  └── Core class: Stores current chart, datasets, metadata               │
+├─────────────────────────────────────────────────────────────────────────┤
+│  SECTION 4: History & Logs (Lines 566-640)                              │
+│  ├── HistoryStack: Undo/Redo implementation                             │
+│  └── ActionLog: User action logging                                     │
+├─────────────────────────────────────────────────────────────────────────┤
+│  SECTION 5: CodeGenerator (Lines 641-817)                               │
+│  └── Generates Python code from current chart state                     │
+├─────────────────────────────────────────────────────────────────────────┤
+│  SECTION 6: Singleton Initialization (Lines 818-845)                    │
+│  └── figure_store, history_stack, code_generator global instances       │
+├─────────────────────────────────────────────────────────────────────────┤
+│  SECTION 7-8: UI Components (Lines 846-1187)                            │
+│  ├── ribbon: Top toolbar (HOME/DATA/PLOTS/ANNOTATE/VIEW tabs)           │
+│  ├── workspace_panel: Left panel (code editor + data table)             │
+│  ├── property_inspector: Right property inspector                       │
+│  └── Modals: Pop-ups (add annotation, about)                            │
+├─────────────────────────────────────────────────────────────────────────┤
+│  SECTION 9-15: Callbacks (Lines 1188-2676)                              │
+│  ├── 9: UI Interaction (tab switching)                                  │
+│  ├── 10a: Data Management (CSV upload, delete, clean)                   │
+│  ├── 10b: Data Interaction (select points, delete points)               │
+│  ├── 11: Code Generation & Execution                                    │
+│  ├── 12: Property Editor (CORE!)                                        │
+│  ├── 13: Drawing Tools & Annotations                                    │
+│  ├── 14: History & Session Management                                   │
+│  └── 15: View Tools (Zoom/Pan/Reset)                                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│  SECTION 16: Launch Application (Lines 2677-2696)                       │
+│  └── app.run(debug=True, port=8051)                                     │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📌 Part 3: Four Core Classes Explained
+
+> 📖 **Want more details?** See [Section 3.2: Core Class Design](#32-core-class-design) for complete class diagrams, all methods, and design rationale.
+
+### 🔷 Class 1: `TraceDataset` (Data Container)
+
+**Location:** Lines 210-266  
+**Purpose:** Encapsulates all information for a single chart layer (trace)
+
+```python
+@dataclass
+class TraceDataset:
+    """Data container for one chart layer"""
+    key: str              # Unique identifier, e.g., "trace_1"
+    name: str             # Display name, e.g., "Demo Signal"
+    df: pd.DataFrame      # Actual data (x, y, z columns)
+    color: str = "#1f77b4"      # Color
+    line_width: float = 2.5     # Line width
+    marker_size: float = 6.0    # Marker size
+    visible: bool = True        # Visibility
+    chart_type: str = "scatter" # Chart type
+
+    def to_plotly_trace(self):
+        """Convert to Plotly trace object"""
+        if self.chart_type == "bar":
+            trace = go.Bar(x=self.df['x'], y=self.df['y'], name=self.name)
+        elif self.chart_type == "scatter":
+            trace = go.Scatter(x=self.df['x'], y=self.df['y'], 
+                              mode="lines+markers", name=self.name)
+        # ... other types
+        
+        # Apply styling
+        trace.update(marker=dict(size=self.marker_size, color=self.color))
+        return trace
+```
+
+**Why Do We Need This Class?**
+- Binds "data" and "styling" together
+- Easy to serialize for save/load
+- Can generate multiple chart types from one dataset
+
+---
+
+### 🔷 Class 2: `FigureStore` (Core State Management)
+
+**Location:** Lines 271-565  
+**Purpose:** The "brain" of the entire application, manages all state
+
+```python
+class FigureStore:
+    """Manages current Plotly chart and all datasets"""
+    
+    def __init__(self, theme: str = "plotly_white"):
+        self.current_theme: str = theme          # Current theme
+        self.figure: go.Figure = None            # Current chart object ⭐
+        self.datasets: Dict[str, TraceDataset] = {}  # All datasets
+        self.dataset_order: List[str] = []       # Dataset order
+        self.data_repository: Dict[str, pd.DataFrame] = {}  # Raw data warehouse
+        self.metadata: Dict = {...}              # Metadata (creation time, etc.)
+```
+
+**Key Methods Explained:**
+
+```python
+# 1. Add Dataset
+def add_dataset(self, key, name, df, color, ...):
+    dataset = TraceDataset(key=key, name=name, df=df, ...)
+    self.datasets[key] = dataset
+    self.dataset_order.append(key)
+
+# 2. Rebuild Figure from Datasets
+def rebuild_figure_from_datasets(self):
+    fig = go.Figure()
+    for key in self.dataset_order:
+        dataset = self.datasets[key]
+        fig.add_trace(dataset.to_plotly_trace())  # Add each trace
+    fig.update_layout(**self._base_layout())
+    self.figure = fig
+
+# 3. Serialize Session (Save as JSON)
+def serialize_session(self) -> Dict:
+    return {
+        "metadata": self.metadata,
+        "datasets": {k: ds.to_dict() for k, ds in self.datasets.items()},
+        "figure": self.figure.to_dict(),
+        "version": "1.0.0"
+    }
+
+# 4. Load Session
+def load_session(self, payload: Dict):
+    self.datasets.clear()
+    for key, item in payload["datasets"].items():
+        df = pd.DataFrame(item["df"])
+        self.add_dataset(key=key, df=df, ...)
+    self.figure = go.Figure(payload["figure"])
+```
+
+**State Flow Diagram:**
+```
+User Action → Callback Invoked → FigureStore Method → Update self.figure → Return to UI
+```
+
+---
+
+### 🔷 Class 3: `HistoryStack` (Undo/Redo)
+
+**Location:** Lines 570-636  
+**Purpose:** Classic Undo/Redo stack implementation
+
+```python
+class HistoryStack:
+    """Undo/Redo stack for chart states"""
+    
+    def __init__(self, max_size: int = 50):
+        self.max_size = max_size
+        self.undo_stack: List[Dict] = []  # History states
+        self.redo_stack: List[Dict] = []  # Undone states
+
+    def push(self, fig_dict: Dict):
+        """Save current state to history"""
+        snapshot = copy.deepcopy(fig_dict)
+        self.undo_stack.append(snapshot)
+        if len(self.undo_stack) > self.max_size:
+            self.undo_stack.pop(0)  # Remove oldest
+        self.redo_stack.clear()     # New action clears redo
+
+    def undo(self) -> Optional[Dict]:
+        """Undo: Go back to previous state"""
+        if len(self.undo_stack) <= 1:
+            return None
+        current = self.undo_stack.pop()      # Pop current
+        self.redo_stack.append(current)       # Store in redo
+        return self.undo_stack[-1]            # Return previous state
+
+    def redo(self) -> Optional[Dict]:
+        """Redo: Restore undone state"""
+        if not self.redo_stack:
+            return None
+        state = self.redo_stack.pop()
+        self.undo_stack.append(state)
+        return state
+```
+
+**Visual Understanding:**
+```
+Action sequence: A → B → C → D
+                           ↑ Current
+Undo Stack: [A, B, C, D]
+Redo Stack: []
+
+--- User clicks Undo ---
+Undo Stack: [A, B, C]  ← Back to C
+Redo Stack: [D]
+
+--- User clicks Redo ---
+Undo Stack: [A, B, C, D]  ← Restored to D
+Redo Stack: []
+```
+
+---
+
+### 🔷 Class 4: `CodeGenerator` (Code Generator)
+
+**Location:** Lines 641-817  
+**Purpose:** Reverse-generate Python code from current chart state
+
+```python
+class CodeGenerator:
+    """Convert current chart to runnable Python code"""
+
+    def generate_code(self, store: FigureStore) -> str:
+        """Generate complete Python code"""
+        fig_json = store.figure.to_json()
+        
+        code = [
+            "# Auto-generated by PyFigureEditor",
+            "import json",
+            "import plotly.graph_objects as go",
+            "",
+            f"fig_dict = json.loads({fig_json!r})",
+            "fig = go.Figure(fig_dict)",
+            "fig.show()"
+        ]
+        return "\n".join(code)
+
+    def generate_smart_plot_code(self, df_name, plot_type, df):
+        """Smart code generation: Auto-infer column names"""
+        
+        # 1. Analyze column data types
+        num_cols = df.select_dtypes(include=np.number).columns.tolist()
+        cat_cols = df.select_dtypes(exclude=np.number).columns.tolist()
+        
+        # 2. Smart column selection based on chart type
+        if plot_type == 'scatter':
+            x_col, y_col = num_cols[0], num_cols[1]
+            return f"fig = px.scatter({df_name}, x='{x_col}', y='{y_col}')"
+            
+        elif plot_type == 'bar':
+            x_col = cat_cols[0] if cat_cols else num_cols[0]
+            y_col = num_cols[0]
+            return f"fig = px.bar({df_name}, x='{x_col}', y='{y_col}')"
+        # ... 26+ chart types
+```
+
+---
+
+## 📌 Part 4: Callback System Deep Dive
+
+> 📖 **Want more details?** See [Section 4.3: Callback Implementation](#43-callback-implementation---the-brain-of-the-application) for complete callback code and [Section 2.4: Reactive Programming](#24-reactive-programming-paradigm) for the theory.
+
+### 🔄 What is a Callback? (Core Mechanism)
+
+**Callback = Reactive Programming**
+
+```
+Traditional Programming:     Reactive Programming (Dash):
+while True:                  @app.callback(...)
+  if button_clicked:         def handle_click():
+    do_something()               do_something()
+  sleep(0.1)                 # Auto-triggered, no polling needed!
+```
+
+**Three Components of a Dash Callback:**
+
+```python
+@app.callback(
+    Output('main-graph', 'figure'),     # 1. OUTPUT: What to update
+    Input('btn-apply', 'n_clicks'),     # 2. INPUT: What triggers this function
+    State('dd-color', 'value')          # 3. STATE: Data to read but not trigger
+)
+def update_graph(n_clicks, color):
+    # 4. FUNCTION: The actual logic
+    fig = go.Figure(...)
+    return fig  # Return value automatically updates Output
+```
+
+**Input vs State Difference:**
+| | Input | State |
+|---|---|---|
+| Triggers Callback on change | ✅ Yes | ❌ No |
+| Can read current value | ✅ Yes | ✅ Yes |
+| Use case | Trigger (button click) | Additional data (dropdown current value) |
+
+---
+
+### 🔧 Key Callback Analysis
+
+#### Callback 1: Property Editor (Most Complex Callback)
+
+**Location:** Lines 2006-2090  
+**Function:** When user clicks "Apply", update the selected element's properties
+
+```python
+@app.callback(
+    Output("main-graph", "figure", allow_duplicate=True),
+    Input("btn-apply-props", "n_clicks"),           # Trigger: Apply button
+    State("dd-element-select", "value"),            # Selected element
+    State("input-prop-name", "value"),              # Name input
+    State("input-prop-color", "value"),             # Color picker
+    State("input-prop-size", "value"),              # Size input
+    # ... 35+ property States
+    State("main-graph", "figure"),                  # Current chart
+    prevent_initial_call=True
+)
+def apply_property_changes(n_clicks, selected_element, name, color, size, ...):
+    # 1. Get current chart
+    fig = go.Figure(fig_dict)
+    
+    # 2. Update different properties based on selected element type
+    if selected_element == "figure":
+        # Update entire chart properties
+        fig.update_layout(title=name, plot_bgcolor=color, ...)
+        
+    elif selected_element.startswith("trace_"):
+        # Update a specific trace's properties
+        idx = int(selected_element.split("_")[1])  # "trace_0" → 0
+        trace = fig.data[idx]
+        trace.update(marker=dict(color=color, size=size))
+        
+    elif selected_element.startswith("annot_"):
+        # Update annotation
+        idx = int(selected_element.split("_")[1])
+        fig.layout.annotations[idx].update(text=name, font=dict(color=color))
+        
+    elif selected_element.startswith("shape_"):
+        # Update shape
+        idx = int(selected_element.split("_")[1])
+        fig.layout.shapes[idx].update(line=dict(color=color, width=width))
+    
+    # 3. Save and return
+    figure_store.update_figure(fig)
+    return fig
+```
+
+**Data Flow Diagram:**
+```
+User changes color → Clicks Apply → Callback triggered
+                                        ↓
+                              Read all State values
+                                        ↓
+                              Determine selected element type
+                                        ↓
+                    ┌───────────────────┼───────────────────┐
+                    ▼                   ▼                   ▼
+               trace_0              figure              annot_0
+                    ↓                   ↓                   ↓
+            fig.data[0]       fig.update_layout    fig.layout.annotations[0]
+              .update()                                 .update()
+                    └───────────────────┼───────────────────┘
+                                        ▼
+                              return fig → Update UI
+```
+
+---
+
+#### Callback 2: Dynamic Property Panel Generation
+
+**Location:** Lines 1767-2005  
+**Function:** Display different property editing options based on selected element type
+
+```python
+@app.callback(
+    Output("inspector-controls", "children"),    # UI container to update
+    Input("dd-element-select", "value"),         # Trigger: Dropdown selection change
+    State("main-graph", "figure"),               # Current chart
+)
+def update_inspector_controls(selected_element, fig_dict):
+    """Dynamically generate property editing panel"""
+    
+    fig = go.Figure(fig_dict)
+    controls = []  # List of UI components to display
+    
+    if selected_element == "figure":
+        # Show chart-level properties
+        controls.append(make_input("Title", fig.layout.title.text))
+        controls.append(make_input("Width", fig.layout.width))
+        controls.append(make_input("Height", fig.layout.height))
+        controls.append(make_dropdown("Theme", ["plotly", "plotly_dark", ...]))
+        controls.append(make_input("X Axis Title", ...))
+        controls.append(make_input("Y Axis Title", ...))
+        
+    elif selected_element.startswith("trace_"):
+        # Show trace-level properties
+        idx = int(selected_element.split("_")[1])
+        trace = fig.data[idx]
+        controls.append(make_input("Name", trace.name))
+        controls.append(make_color_picker("Color", trace.marker.color))
+        controls.append(make_input("Size", trace.marker.size))
+        controls.append(make_dropdown("Symbol", ["circle", "square", ...]))
+        controls.append(make_dropdown("Line Style", ["solid", "dash", ...]))
+        
+    elif selected_element.startswith("annot_"):
+        # Show annotation properties
+        controls.append(make_input("Text", ...))
+        controls.append(make_input("X Position", ...))
+        controls.append(make_input("Y Position", ...))
+        controls.append(make_checkbox("Show Arrow", ...))
+    
+    # Add Apply and Delete buttons
+    controls.append(make_button("Apply Changes"))
+    controls.append(make_button("Delete Element"))
+    
+    return controls  # Return dynamically generated UI
+```
+
+**Why This Matters:**
+- **Traditional way:** Show all 100+ properties, users can't find what they need
+- **My approach:** Only show 10-20 properties relevant to selected element, clear and concise!
+
+---
+
+#### Callback 3: Drawing Tools Implementation
+
+**Location:** Lines 2379-2455  
+**Function:** Allow users to draw shapes directly on the chart
+
+```python
+# Part A: Set Drawing Mode
+@app.callback(
+    Output("main-graph", "figure", allow_duplicate=True),
+    Input("btn-draw-line", "n_clicks"),
+    Input("btn-draw-rect", "n_clicks"),
+    Input("btn-draw-circle", "n_clicks"),
+    # ...
+)
+def set_shape_draw_mode(n_line, n_rect, n_circle, ...):
+    ctx_id = ctx.triggered_id  # Which button was clicked
+    
+    if ctx_id == "btn-draw-line":
+        fig.update_layout(dragmode="drawline")      # Plotly built-in mode
+    elif ctx_id == "btn-draw-rect":
+        fig.update_layout(dragmode="drawrect")
+    elif ctx_id == "btn-draw-circle":
+        fig.update_layout(dragmode="drawcircle")
+    
+    return fig
+
+# Part B: Capture Drawn Shapes
+@app.callback(
+    Output("figure-store-client", "data"),
+    Input("main-graph", "relayoutData"),  # Plotly auto-sends drawing data
+)
+def sync_drawn_shapes(relayout_data, fig_dict):
+    if 'shapes' in relayout_data:
+        # User just finished drawing, Plotly tells us the coordinates
+        fig.layout.shapes = relayout_data['shapes']
+        figure_store.update_figure(fig)
+    return fig.to_dict()
+```
+
+**Drawing Workflow:**
+```
+1. User clicks "Draw Rectangle" button
+   ↓
+2. Callback executes: fig.update_layout(dragmode="drawrect")
+   ↓
+3. Plotly.js enters drawing mode, cursor becomes crosshair
+   ↓
+4. User drags to draw on the chart
+   ↓
+5. Plotly.js auto-sends relayoutData = {shapes: [...]}
+   ↓
+6. Callback captures and saves to FigureStore
+```
+
+---
+
+## 📌 Part 5: UI Layout Architecture
+
+> 📖 **Want more details?** See [Section 4.2: Layout Implementation](#42-layout-implementation---building-the-user-interface) for actual layout code and component details.
+
+### 🖥️ Overall Layout (Three-Column Design)
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  RIBBON (Top Toolbar)                                                   │
+│  ┌─────┐ ┌─────┐ ┌─────┐ ┌──────────┐ ┌─────┐                          │
+│  │HOME │ │DATA │ │PLOTS│ │ ANNOTATE │ │VIEW │                          │
+│  └─────┘ └─────┘ └─────┘ └──────────┘ └─────┘                          │
+│  [Open][Save]  [Import CSV] [Scatter][Bar][3D]  [Draw][Text]  [Zoom]   │
+├─────────────┬───────────────────────────────────┬───────────────────────┤
+│  LEFT PANEL │         CENTER CANVAS             │     RIGHT PANEL       │
+│  (width=3)  │           (width=6)               │       (width=3)       │
+│             │                                   │                       │
+│ ┌─────────┐ │                                   │ ┌───────────────────┐ │
+│ │Command  │ │                                   │ │Property Inspector │ │
+│ │Window   │ │         ┌─────────────┐           │ ├───────────────────┤ │
+│ │         │ │         │             │           │ │ Select Element:   │ │
+│ │ # Python│ │         │   PLOTLY    │           │ │ [▼ Trace 0     ]  │ │
+│ │ code... │ │         │   GRAPH     │           │ │                   │ │
+│ │         │ │         │             │           │ │ Name: [Demo     ] │ │
+│ └─────────┘ │         │             │           │ │ Color: [● Blue  ] │ │
+│             │         │             │           │ │ Size:  [6       ] │ │
+│ ┌─────────┐ │         └─────────────┘           │ │ ...               │ │
+│ │Data View│ │                                   │ │                   │ │
+│ │ (Table) │ │                                   │ │ [Apply] [Delete]  │ │
+│ └─────────┘ │                                   │ └───────────────────┘ │
+└─────────────┴───────────────────────────────────┴───────────────────────┘
+```
+
+### 📋 Ribbon (Top Tab Bar) Details
+
+**HOME Tab:**
+```python
+# File Operations + History
+[📂 Open Session] [💾 Save Session] [↶ Undo] [↷ Redo] [ℹ️ About]
+```
+
+**DATA Tab:**
+```python
+# Data Management Workflow: Import → Select → View → Clean
+[📂 Import CSV] [🎲 Load Demo]  # 1. Data Source
+[▼ Select Data] [🗑️ Delete]     # 2. Select Dataset
+[📋 Raw Table] [📊 Summary]     # 3. View Data
+[🧹 Clean NA] [✂️ Remove Sel]   # 4. Pre-processing
+```
+
+**PLOTS Tab:**
+```python
+# 26+ Chart Types, Grouped Display
+Basic 2D:     [Scatter] [Line] [Bar] [Area] [Bubble]
+Distribution: [Hist] [Box] [Violin] [Heatmap] [Pie] [Sunburst] [Treemap]
+3D & Contour: [Scatter3D] [Line3D] [Surface] [Contour]
+Specialized:  [Polar] [Ternary] [Funnel] [Candle] [Waterfall] [ScatMat] [ParCoords]
+Maps & Geo:   [ScatGeo] [Choropleth] [Globe]
+```
+
+**ANNOTATE Tab:**
+```python
+# Drawing and Annotation Tools
+Shapes:    [📏 Line] [⬜ Rect] [⭕ Circle] [✏️ Free] [⬡ Polygon]
+Text:      [📝 Add Annotation]
+Media:     [🖼️ Add Image]
+```
+
+**VIEW Tab:**
+```python
+# View Controls
+Navigation: [🔍 Zoom] [✋ Pan] [🏠 Reset]
+Panels:     [☑️ Inspector Toggle]
+```
+
+---
+
+## 📌 Part 6: Complete Data Flow Example
+
+> 📖 **Want more details?** See [Section 3.5: Data Flow Architecture](#35-data-flow-architecture) for complete data flow diagrams.
+
+### 📊 Example: From Creating a Scatter Plot to Changing Color
+
+```
+Step 1: User clicks "Scatter" button
+        ↓
+Step 2: Callback `generate_and_trigger_plot` triggered
+        ↓
+        Generate code: "fig = px.scatter(df, x='x', y='y')"
+        ↓
+Step 3: Code auto-executes (Callback `execute_code`)
+        ↓
+        exec(code) → Create fig object
+        ↓
+Step 4: figure_store.update_figure(fig)
+        ↓
+        History recorded: history_stack.push(fig.to_dict())
+        ↓
+Step 5: Return fig → Update main-graph → User sees the chart!
+        ↓
+        ════════════════════════════════════════════
+        ↓
+Step 6: User selects "Trace 0" from dropdown
+        ↓
+Step 7: Callback `update_inspector_controls` triggered
+        ↓
+        Read current properties of fig.data[0]
+        ↓
+        Dynamically generate property panel: [Name][Color][Size][Symbol]...
+        ↓
+Step 8: User changes Color to "red", clicks Apply
+        ↓
+Step 9: Callback `apply_property_changes` triggered
+        ↓
+        fig.data[0].update(marker=dict(color="red"))
+        ↓
+Step 10: Return fig → Chart color changes to red instantly!
+```
+
+---
+
+## 📌 Part 7: Key Technical Points
+
+> 📖 **Want more details?** See [Section 2.4: Reactive Programming](#24-reactive-programming-paradigm) for complete technical explanations.
+
+### 🔑 Technical Point 1: `allow_duplicate=True`
+
+**Problem:** Dash by default doesn't allow multiple Callbacks to update the same Output
+
+**Solution:**
+```python
+# Callback 1: Edit Properties
+@app.callback(
+    Output("main-graph", "figure", allow_duplicate=True),  # ← Allow duplicate
+    Input("btn-apply-props", "n_clicks"),
+    ...
+)
+
+# Callback 2: Drawing Tools
+@app.callback(
+    Output("main-graph", "figure", allow_duplicate=True),  # ← Same Output
+    Input("btn-draw-rect", "n_clicks"),
+    ...
+)
+
+# Callback 3: Undo/Redo
+@app.callback(
+    Output("main-graph", "figure", allow_duplicate=True),  # ← All can update
+    Input("btn-undo", "n_clicks"),
+    ...
+)
+```
+
+### 🔑 Technical Point 2: `ctx.triggered_id` to Identify Trigger Source
+
+**Problem:** A Callback has multiple Inputs, how to know which one triggered it?
+
+```python
+@app.callback(
+    Output(...),
+    Input("btn-zoom", "n_clicks"),
+    Input("btn-pan", "n_clicks"),
+    Input("btn-reset", "n_clicks"),
+)
+def view_tools(n_zoom, n_pan, n_reset):
+    ctx_id = ctx.triggered_id  # Get the triggered component ID
+    
+    if ctx_id == "btn-zoom":
+        fig.update_layout(dragmode="zoom")
+    elif ctx_id == "btn-pan":
+        fig.update_layout(dragmode="pan")
+    elif ctx_id == "btn-reset":
+        fig.update_xaxes(autorange=True)
+```
+
+### 🔑 Technical Point 3: Plotly Figure JSON Structure
+
+```python
+fig.to_dict()  # Returns:
+{
+    "data": [
+        {
+            "type": "scatter",
+            "x": [1, 2, 3],
+            "y": [4, 5, 6],
+            "name": "Trace 0",
+            "marker": {"color": "blue", "size": 10}
+        },
+        {...}  # More traces
+    ],
+    "layout": {
+        "title": {"text": "My Chart"},
+        "template": "plotly_white",
+        "shapes": [...],       # Drawn shapes
+        "annotations": [...]   # Text annotations
+    }
+}
+```
+
+**This is why we can:**
+- Save session as JSON
+- Load session from JSON
+- Modify any property
+
+---
+
+## 📌 Part 8: Suggested Demo Workflow
+
+> 📖 **Want more details?** See [Section 5: Complete Feature Documentation](#5-complete-feature-documentation---your-user-manual) for step-by-step tutorials on each feature.
+
+### 🎬 Live Demo Steps (5 Minutes)
+
+| Time | Action | Purpose | 📖 Learn More |
+|------|--------|---------|---------------|
+| 0:00 | Open [zye.pythonanywhere.com](https://zye.pythonanywhere.com/) | Show successful deployment | [Live Demo](https://zye.pythonanywhere.com/) |
+| 0:30 | DATA → Load Demo → Generate demo data | Show data management | [5.4 Data Management](#54-data-management---load-edit-clean) |
+| 1:00 | PLOTS → Click Scatter → Auto-generate chart | Show one-click creation | [5.1 Plot Types](#51-plot-types-and-chart-creation---your-26-chart-arsenal) |
+| 1:30 | Select Trace 0 → Change color to red → Apply | Show property editing | [5.2 Property Editing](#52-property-editing-system---fine-tune-everything) |
+| 2:00 | ANNOTATE → Draw Rect → Draw rectangle on chart | Show drawing tools | [5.3 Drawing Tools](#53-drawing-and-annotation-tools---make-your-charts-talk) |
+| 2:30 | Add Annotation → Enter text → Add | Show annotation feature | [5.3.2 Text Annotations](#532-adding-text-annotations---step-by-step) |
+| 3:00 | Undo → Redo → Show history feature | Show undo/redo | [5.7 Undo/Redo System](#57-undoredo-system---never-lose-your-work) |
+| 3:30 | HOME → Save Session → Download JSON | Show session saving | [5.5 Session Management](#55-session-management---save-and-share-your-work) |
+| 4:00 | View Command Window generated code | Show code generation | [5.6 Code Export](#56-code-export---take-your-work-anywhere) |
+| 4:30 | Switch to 3D/Map chart types | Show diversity | [5.1.3 3D Charts](#513-3d-charts---when-two-dimensions-arent-enough) |
+
+---
+
+## 📌 Part 9: Common Questions Q&A
+
+> 📖 **Want more details?** See [Section 2: Literature Review](#2-literature-review-and-technical-foundation) for complete library comparisons and technical justifications.
+
+| Question | Answer | 📖 Learn More |
+|----------|--------|---------------|
+| **Why choose Plotly over Matplotlib?** | Matplotlib is static; Plotly natively supports interaction (zoom, pan, hover), and has `config={'editable': True}` for on-chart editing | [2.1 Visualization Libraries](#21-overview-of-python-visualization-libraries) |
+| **Why use Dash instead of Flask + JavaScript?** | Dash is Plotly's official framework with native integration; no JS needed, entire app in Python | [2.3 Web Frameworks](#23-web-based-gui-frameworks-for-python) |
+| **Will too many Callbacks be slow?** | No. Dash only updates changed parts (virtual DOM diffing), and Callbacks are event-driven | [2.4 Reactive Programming](#24-reactive-programming-paradigm) |
+| **How does it handle large data?** | Plotly uses WebGL rendering, tested with 10,000+ data points without lag |
+| **What does Session save?** | Complete `fig.to_dict()`, including data, styling, layout, shapes, annotations |
+| **Is the code generation accurate?** | Generated code is complete JSON reconstruction, guarantees 100% reproduction of current chart |
+
+---
+
+## 📌 Part 10: Technical Achievement Summary
+
+> 📖 **Want more details?** See [Section 1.4: Scope and Deliverables](#14-scope-and-deliverables) for complete project metrics and code statistics.
+
+| Metric | Value | 📖 See More |
+|--------|-------|-------------|
+| Total Lines of Code | 2,696 lines | [Code Statistics](#144-code-statistics-summary) |
+| Supported Chart Types | 26+ types | [Section 5.1: Plot Types](#51-plot-types-and-chart-creation---your-26-chart-arsenal) |
+| Editable Properties | 35+ properties | [Section 5.2: Property Editing](#52-property-editing-system---fine-tune-everything) |
+| Number of Callbacks | 24+ callbacks | [Section 4.5: Callback Reference](#45-complete-callback-reference-table) |
+| Core Classes | 4 classes | [Section 3.2: Core Class Design](#32-core-class-design) |
+| Deployment Status | ✅ Running in production | [Live Demo](https://zye.pythonanywhere.com/) |
+
+---
+
+## 🔗 Cross-Reference: Quick Guide → Detailed Report
+
+> **How to use this document:** The Quick Guide above gives you a fast overview. Click any link to jump to the corresponding detailed section in the Full Technical Report below.
+
+| 🚀 Quick Guide Topic | 📚 Detailed Report Section | What You'll Learn |
+|---------------------|---------------------------|-------------------|
+| **Part 1:** What & Why | **[1. Introduction](#1-introduction)** | Problem statement, motivation, objectives |
+| **Part 2:** File Structure | **[3. System Architecture](#3-system-architecture-and-design)** | Complete architecture diagrams |
+| **Part 3:** 4 Core Classes | **[3.2 Core Class Design](#32-core-class-design)** | Full class implementations with code |
+| **Part 4:** Callbacks | **[4.3 Callback Implementation](#43-callback-implementation---the-brain-of-the-application)** | All 24 callbacks explained |
+| **Part 5:** UI Layout | **[4.2 Layout Implementation](#42-layout-implementation---building-the-user-interface)** | Component code and structure |
+| **Part 6:** Data Flow | **[3.5 Data Flow Architecture](#35-data-flow-architecture)** | Complete flow diagrams |
+| **Part 7:** Technical Points | **[2.4 Reactive Programming](#24-reactive-programming-paradigm)** | Theory and patterns |
+| **Part 8:** Demo Steps | **[5. Feature Documentation](#5-complete-feature-documentation---your-user-manual)** | Step-by-step user manual |
+| **Part 9:** Q&A | **[2. Literature Review](#2-literature-review-and-technical-foundation)** | Technology comparisons |
+| **26+ Chart Types** | **[5.1 Plot Types](#51-plot-types-and-chart-creation---your-26-chart-arsenal)** | All chart types with examples |
+| **Property Editing** | **[5.2 Property Editing](#52-property-editing-system---fine-tune-everything)** | 35+ properties documented |
+| **Drawing Tools** | **[5.3 Drawing Tools](#53-drawing-and-annotation-tools---make-your-charts-talk)** | Annotation tutorial |
+| **Data Management** | **[5.4 Data Management](#54-data-management---load-edit-clean)** | CSV import, editing, cleaning |
+| **Session Save/Load** | **[5.5 Session Management](#55-session-management---save-and-share-your-work)** | Save workflow explained |
+| **Code Export** | **[5.6 Code Export](#56-code-export---take-your-work-anywhere)** | Generated code examples |
+| **Undo/Redo** | **[5.7 Undo/Redo System](#57-undoredo-system---never-lose-your-work)** | History stack explained |
+| **Templates** | **[5.8 Template System](#58-template-system---instant-professional-styling)** | 10 templates compared |
+
+---
+
+> 📖 **Below is the full technical report with more implementation details, code explanations, and architecture diagrams.**
+
+---
+
 ## Abstract
 
-This report presents **PyFigureEditor**, a comprehensive web-based interactive scientific visualization platform developed in Python that replicates and extends the functionality of MATLAB's Figure Tool. The project addresses a fundamental limitation in traditional Python plotting workflows: the inability to interactively edit and modify visualizations after their initial creation without re-executing code.
+This report presents **PyFigureEditor**, a web-based interactive visualization GUI developed in Python that replicates and extends the functionality of MATLAB's Figure Tool. The project addresses a fundamental limitation in traditional Python plotting workflows: the inability to interactively edit and modify visualizations after their initial creation.
 
-The application provides a complete graphical user interface (GUI) featuring **26+ chart types**, **real-time property editing**, **drawing and annotation tools**, **session management**, and **automatic Python code generation**. Built upon the Dash framework with Plotly.js as the visualization engine, the system implements a sophisticated **reactive callback architecture** for seamless user interaction.
+The application provides a graphical user interface (GUI) featuring **26+ chart types**, **real-time property editing**, **drawing and annotation tools**, **session management**, and **automatic Python code generation**. Built upon the Dash framework with Plotly.js as the visualization engine, the system implements a sophisticated **reactive callback architecture** for seamless user interaction.
 
 Two implementation versions are provided: (1) a **Jupyter Notebook version** (`Final_Project_Implementation.ipynb`) optimized for educational and development environments, and (2) a **standalone server application** (`app.py`) suitable for production deployment. The application has been successfully deployed to PythonAnywhere and is accessible at **https://zye.pythonanywhere.com/**.
 
-Key technical contributions include: a centralized **FigureStore state management system**, a **dynamic UI generation mechanism** for context-sensitive property editing, a **smart code generator** with automatic column type inference, and a comprehensive **undo/redo history stack**. The system demonstrates that Python can provide an interactive data visualization experience comparable to commercial software like MATLAB.
-
-**Keywords:** Interactive Visualization, Python, Dash, Plotly, GUI Development, Scientific Computing, MATLAB Alternative, Web Application, Data Science Tools
+Key technical contributions include: a centralized **FigureStore state management system**, a **dynamic UI generation mechanism** for context-sensitive property editing, a **smart code generator** with automatic column type inference, and a comprehensive **undo/redo history stack**. The system demonstrates that Python can provide an interactive data visualization experience comparable to like MATLAB.
 
 ---
 
@@ -56,283 +890,486 @@ Key technical contributions include: a centralized **FigureStore state managemen
 
 - [PyFigureEditor: A Python-Based Interactive Scientific Visualization Platform with MATLAB-Style Editing Capabilities](#pyfigureeditor-a-python-based-interactive-scientific-visualization-platform-with-matlab-style-editing-capabilities)
   - [MATH 4710 - Final Project Report](#math-4710---final-project-report)
-    - [A Comprehensive Technical Documentation and Academic Analysis](#a-comprehensive-technical-documentation-and-academic-analysis)
+    - [A Comprehensive Technical Documentation and Project Report](#a-comprehensive-technical-documentation-and-project-report)
     - [🌐 Live Production Deployment](#-live-production-deployment)
   - [**https://zye.pythonanywhere.com/**](#httpszyepythonanywherecom)
+- [🎯 Quick Guide (Complete Code Architecture Analysis)](#-quick-guide-complete-code-architecture-analysis)
+  - [📋 Quick Navigation: Guide ↔ Report Mapping](#-quick-navigation-guide--report-mapping)
+  - [📌 Part 1: Project Overview (What \& Why)](#-part-1-project-overview-what--why)
+    - [🤔 What Problem Does This Project Solve?](#-what-problem-does-this-project-solve)
+    - [🎯 Core Features Overview](#-core-features-overview)
+  - [📌 Part 2: Code Architecture Overview](#-part-2-code-architecture-overview)
+    - [🗂️ File Structure](#️-file-structure)
+    - [🏗️ `app.py` Code Organization (By Line Numbers)](#️-apppy-code-organization-by-line-numbers)
+  - [📌 Part 3: Four Core Classes Explained](#-part-3-four-core-classes-explained)
+    - [🔷 Class 1: `TraceDataset` (Data Container)](#-class-1-tracedataset-data-container)
+    - [🔷 Class 2: `FigureStore` (Core State Management)](#-class-2-figurestore-core-state-management)
+    - [🔷 Class 3: `HistoryStack` (Undo/Redo)](#-class-3-historystack-undoredo)
+    - [🔷 Class 4: `CodeGenerator` (Code Generator)](#-class-4-codegenerator-code-generator)
+  - [📌 Part 4: Callback System Deep Dive](#-part-4-callback-system-deep-dive)
+    - [🔄 What is a Callback? (Core Mechanism)](#-what-is-a-callback-core-mechanism)
+    - [🔧 Key Callback Analysis](#-key-callback-analysis)
+      - [Callback 1: Property Editor (Most Complex Callback)](#callback-1-property-editor-most-complex-callback)
+      - [Callback 2: Dynamic Property Panel Generation](#callback-2-dynamic-property-panel-generation)
+      - [Callback 3: Drawing Tools Implementation](#callback-3-drawing-tools-implementation)
+  - [📌 Part 5: UI Layout Architecture](#-part-5-ui-layout-architecture)
+    - [🖥️ Overall Layout (Three-Column Design)](#️-overall-layout-three-column-design)
+    - [📋 Ribbon (Top Tab Bar) Details](#-ribbon-top-tab-bar-details)
+  - [📌 Part 6: Complete Data Flow Example](#-part-6-complete-data-flow-example)
+    - [📊 Example: From Creating a Scatter Plot to Changing Color](#-example-from-creating-a-scatter-plot-to-changing-color)
+  - [📌 Part 7: Key Technical Points](#-part-7-key-technical-points)
+    - [🔑 Technical Point 1: `allow_duplicate=True`](#-technical-point-1-allow_duplicatetrue)
+    - [🔑 Technical Point 2: `ctx.triggered_id` to Identify Trigger Source](#-technical-point-2-ctxtriggered_id-to-identify-trigger-source)
+    - [🔑 Technical Point 3: Plotly Figure JSON Structure](#-technical-point-3-plotly-figure-json-structure)
+  - [📌 Part 8: Suggested Demo Workflow](#-part-8-suggested-demo-workflow)
+    - [🎬 Live Demo Steps (5 Minutes)](#-live-demo-steps-5-minutes)
+  - [📌 Part 9: Common Questions Q\&A](#-part-9-common-questions-qa)
+  - [📌 Part 10: Technical Achievement Summary](#-part-10-technical-achievement-summary)
+  - [🔗 Cross-Reference: Quick Guide → Detailed Report](#-cross-reference-quick-guide--detailed-report)
   - [Abstract](#abstract)
   - [Table of Contents](#table-of-contents)
   - [1. Introduction](#1-introduction)
     - [1.1 Project Background and Motivation](#11-project-background-and-motivation)
+      - [1.1.1 The Inspiration: MATLAB's Figure Tool](#111-the-inspiration-matlabs-figure-tool)
+      - [1.1.2 The Gap in Python's Ecosystem](#112-the-gap-in-pythons-ecosystem)
+      - [1.1.3 MATLAB Figure Tool Feature Reference](#113-matlab-figure-tool-feature-reference)
     - [1.2 Problem Statement](#12-problem-statement)
+      - [1.2.1 The Primary Problem](#121-the-primary-problem)
+      - [1.2.2 Secondary Problems (Pain Points)](#122-secondary-problems-pain-points)
+      - [1.2.3 Formal Requirements](#123-formal-requirements)
     - [1.3 Project Objectives](#13-project-objectives)
+      - [1.3.1 Tier 1 - Core Objectives (Must Have)](#131-tier-1---core-objectives-must-have)
+      - [1.3.2 Tier 2 - Enhanced Objectives (Should Have)](#132-tier-2---enhanced-objectives-should-have)
+      - [1.3.3 Tier 3 - Advanced Objectives (Nice to Have)](#133-tier-3---advanced-objectives-nice-to-have)
     - [1.4 Scope and Deliverables](#14-scope-and-deliverables)
+      - [1.4.1 What's Included (In Scope)](#141-whats-included-in-scope)
+      - [1.4.2 What's NOT Included (Out of Scope)](#142-whats-not-included-out-of-scope)
+      - [1.4.3 Project Deliverables](#143-project-deliverables)
+      - [1.4.4 Code Statistics Summary](#144-code-statistics-summary)
   - [2. Literature Review and Technical Foundation](#2-literature-review-and-technical-foundation)
     - [2.1 Overview of Python Visualization Libraries](#21-overview-of-python-visualization-libraries)
-      - [2.1.1 Matplotlib: The Foundation](#211-matplotlib-the-foundation)
-      - [2.1.2 Seaborn: Statistical Visualization](#212-seaborn-statistical-visualization)
-      - [2.1.3 Bokeh: Interactive Web Visualizations](#213-bokeh-interactive-web-visualizations)
-      - [2.1.4 Plotly: The Selected Foundation](#214-plotly-the-selected-foundation)
-      - [2.1.5 Comparative Analysis Summary](#215-comparative-analysis-summary)
+      - [2.1.1 Matplotlib: The Grandfather of Python Plotting](#211-matplotlib-the-grandfather-of-python-plotting)
+      - [2.1.2 Seaborn: Beautiful Statistical Charts](#212-seaborn-beautiful-statistical-charts)
+      - [2.1.3 Bokeh: Interactive Web Charts](#213-bokeh-interactive-web-charts)
+      - [2.1.4 Plotly: The Winner! 🏆](#214-plotly-the-winner-)
+      - [2.1.5 The Secret Weapon: Plotly's JSON Architecture](#215-the-secret-weapon-plotlys-json-architecture)
+      - [2.1.6 Comparative Analysis Summary](#216-comparative-analysis-summary)
     - [2.2 MATLAB Figure Tool Analysis](#22-matlab-figure-tool-analysis)
       - [2.2.1 MATLAB Figure Tool Architecture](#221-matlab-figure-tool-architecture)
       - [2.2.2 Feature Mapping: MATLAB to PyFigureEditor](#222-feature-mapping-matlab-to-pyfigureeditor)
-      - [2.2.3 Interaction Paradigms](#223-interaction-paradigms)
+      - [2.2.3 Interaction Paradigms: Modal System](#223-interaction-paradigms-modal-system)
     - [2.3 Web-Based GUI Frameworks for Python](#23-web-based-gui-frameworks-for-python)
       - [2.3.1 Framework Comparison](#231-framework-comparison)
       - [2.3.2 Why Dash Was Selected](#232-why-dash-was-selected)
       - [2.3.3 Dash Architecture Overview](#233-dash-architecture-overview)
     - [2.4 Reactive Programming Paradigm](#24-reactive-programming-paradigm)
       - [2.4.1 What is Reactive Programming?](#241-what-is-reactive-programming)
-      - [2.4.2 Dash's Callback System](#242-dashs-callback-system)
+      - [2.4.2 Dash's Callback System: Input, Output, State](#242-dashs-callback-system-input-output-state)
       - [2.4.3 Callback Graph and Execution Order](#243-callback-graph-and-execution-order)
-      - [2.4.4 Handling Multiple Outputs](#244-handling-multiple-outputs)
+      - [2.4.4 Handling Multiple Outputs: The `allow_duplicate` Pattern](#244-handling-multiple-outputs-the-allow_duplicate-pattern)
   - [3. System Architecture and Design](#3-system-architecture-and-design)
     - [3.1 High-Level System Architecture](#31-high-level-system-architecture)
     - [3.2 Core Class Design](#32-core-class-design)
-      - [3.2.1 FigureStore Class](#321-figurestore-class)
-      - [3.2.2 HistoryStack Class](#322-historystack-class)
-      - [3.2.3 TraceDataset Class](#323-tracedataset-class)
-      - [3.2.4 CodeGenerator Class](#324-codegenerator-class)
+      - [3.2.1 FigureStore Class — The Central Hub](#321-figurestore-class--the-central-hub)
+      - [3.2.2 HistoryStack Class — The Time Machine](#322-historystack-class--the-time-machine)
+      - [3.2.3 TraceDataset Class — The Data Container](#323-tracedataset-class--the-data-container)
+      - [3.2.4 CodeGenerator Class — The Code Writer](#324-codegenerator-class--the-code-writer)
     - [3.3 Component Interaction Diagram](#33-component-interaction-diagram)
     - [3.4 Layout Architecture](#34-layout-architecture)
     - [3.5 Data Flow Architecture](#35-data-flow-architecture)
     - [3.6 Design Decisions and Trade-offs](#36-design-decisions-and-trade-offs)
     - [3.7 Extensibility Points](#37-extensibility-points)
   - [4. Core Implementation Details](#4-core-implementation-details)
-    - [4.1 Application Initialization and Configuration](#41-application-initialization-and-configuration)
-    - [4.2 Layout Implementation](#42-layout-implementation)
-      - [4.2.1 Main Layout Structure](#421-main-layout-structure)
-      - [4.2.2 Header Component Implementation](#422-header-component-implementation)
-      - [4.2.3 Graph Panel Implementation](#423-graph-panel-implementation)
-      - [4.2.4 Property Inspector Implementation](#424-property-inspector-implementation)
-    - [4.3 Callback Implementation](#43-callback-implementation)
-      - [4.3.1 Add Trace Callback](#431-add-trace-callback)
-      - [4.3.2 Element Selection Update Callback](#432-element-selection-update-callback)
-      - [4.3.3 Apply Properties Callback](#433-apply-properties-callback)
-      - [4.3.4 Delete Element Callback](#434-delete-element-callback)
-    - [4.4 Helper Functions](#44-helper-functions)
-      - [4.4.1 Data Parsing Functions](#441-data-parsing-functions)
-      - [4.4.2 History Management Functions](#442-history-management-functions)
-      - [4.4.3 Nested Property Access Functions](#443-nested-property-access-functions)
-  - [5. Complete Feature Documentation](#5-complete-feature-documentation)
-    - [5.1 Plot Types and Chart Creation](#51-plot-types-and-chart-creation)
-      - [5.1.1 Basic Charts](#511-basic-charts)
-      - [5.1.2 Statistical Charts](#512-statistical-charts)
-      - [5.1.3 3D Charts](#513-3d-charts)
-      - [5.1.4 Specialized Charts](#514-specialized-charts)
-      - [5.1.5 Geographic Charts](#515-geographic-charts)
-    - [5.2 Property Editing System](#52-property-editing-system)
-      - [5.2.1 Trace Properties (35+ Properties)](#521-trace-properties-35-properties)
-      - [5.2.2 Layout Properties](#522-layout-properties)
-      - [5.2.3 Annotation Properties](#523-annotation-properties)
-      - [5.2.4 Shape Properties](#524-shape-properties)
-    - [5.3 Drawing and Annotation Tools](#53-drawing-and-annotation-tools)
-      - [5.3.1 Drawing Mode Toolbar](#531-drawing-mode-toolbar)
-      - [5.3.2 Adding Text Annotations](#532-adding-text-annotations)
-      - [5.3.3 Adding Arrows](#533-adding-arrows)
-      - [5.3.4 Adding Images](#534-adding-images)
-    - [5.4 Session Management](#54-session-management)
-      - [5.4.1 Saving Sessions](#541-saving-sessions)
-      - [5.4.2 Loading Sessions](#542-loading-sessions)
-      - [5.4.3 Session Compatibility](#543-session-compatibility)
-    - [5.5 Code Export](#55-code-export)
-      - [5.5.1 Export Formats](#551-export-formats)
-      - [5.5.2 Export Process](#552-export-process)
-    - [5.6 Undo/Redo System](#56-undoredo-system)
-      - [5.6.1 Supported Operations](#561-supported-operations)
-      - [5.6.2 Usage](#562-usage)
-      - [5.6.3 Behavior Notes](#563-behavior-notes)
-    - [5.7 Template System](#57-template-system)
-      - [5.7.1 Available Templates](#571-available-templates)
-      - [5.7.2 Applying Templates](#572-applying-templates)
-  - [6. Deployment Guide](#6-deployment-guide)
-    - [6.1 Two Deployment Versions](#61-two-deployment-versions)
-    - [6.2 Local Development Setup](#62-local-development-setup)
-      - [6.2.1 Prerequisites](#621-prerequisites)
-      - [6.2.2 Running Locally](#622-running-locally)
-      - [6.2.3 Development Mode Features](#623-development-mode-features)
-    - [6.3 PythonAnywhere Deployment](#63-pythonanywhere-deployment)
-      - [6.3.1 Account Setup](#631-account-setup)
-      - [6.3.2 File Upload](#632-file-upload)
-      - [6.3.3 Web App Configuration](#633-web-app-configuration)
-      - [6.3.4 WSGI Configuration](#634-wsgi-configuration)
-      - [6.3.5 Virtual Environment (Recommended)](#635-virtual-environment-recommended)
-      - [6.3.6 Reload and Test](#636-reload-and-test)
-      - [6.3.7 Troubleshooting PythonAnywhere](#637-troubleshooting-pythonanywhere)
-    - [6.4 Google Colab Deployment](#64-google-colab-deployment)
-      - [6.4.1 Colab-Specific Setup](#641-colab-specific-setup)
-      - [6.4.2 Colab Run Modes](#642-colab-run-modes)
-      - [6.4.3 Colab Limitations](#643-colab-limitations)
-    - [6.5 Alternative Deployment Platforms](#65-alternative-deployment-platforms)
-      - [6.5.1 Heroku Deployment](#651-heroku-deployment)
-      - [6.5.2 AWS Elastic Beanstalk](#652-aws-elastic-beanstalk)
-      - [6.5.3 Docker Deployment](#653-docker-deployment)
-    - [6.6 Production Considerations](#66-production-considerations)
-      - [6.6.1 Security](#661-security)
-      - [6.6.2 Performance Optimization](#662-performance-optimization)
-      - [6.6.3 Monitoring](#663-monitoring)
+    - [4.1 Application Initialization - The "Birth" of Your App](#41-application-initialization---the-birth-of-your-app)
+      - [4.1.1 Understanding Auto-Dependency Installation](#411-understanding-auto-dependency-installation)
+      - [4.1.2 Import Statements - Loading Your Toolbox](#412-import-statements---loading-your-toolbox)
+      - [4.1.3 Application Creation - The "Main Engine"](#413-application-creation---the-main-engine)
+    - [4.2 Layout Implementation - Building the User Interface](#42-layout-implementation---building-the-user-interface)
+      - [4.2.1 Main Layout Structure - The "Blueprint"](#421-main-layout-structure---the-blueprint)
+      - [4.2.2 The Ribbon Tabs - ACTUAL Code from app.py](#422-the-ribbon-tabs---actual-code-from-apppy)
+      - [4.2.3 The PLOTS Tab - 26+ Chart Types in One Place](#423-the-plots-tab---26-chart-types-in-one-place)
+      - [4.2.4 The Workspace Panel - Command Window \& Data View](#424-the-workspace-panel---command-window--data-view)
+      - [4.2.5 The Property Inspector - Dynamic UI Generation](#425-the-property-inspector---dynamic-ui-generation)
+    - [4.3 Callback Implementation - The "Brain" of the Application](#43-callback-implementation---the-brain-of-the-application)
+      - [4.3.1 Understanding Callback Structure](#431-understanding-callback-structure)
+      - [4.3.2 Tab Switching Callback - The Simplest Example](#432-tab-switching-callback---the-simplest-example)
+      - [4.3.3 Data Management Callback - A Complex Multi-Input Example](#433-data-management-callback---a-complex-multi-input-example)
+      - [4.3.4 Code Generation Callback - Auto-Generate Plotly Code](#434-code-generation-callback---auto-generate-plotly-code)
+      - [4.3.5 Code Execution Callback - Running User Code](#435-code-execution-callback---running-user-code)
+      - [4.3.6 Property Editor Callback - The "Big One" (35+ Properties)](#436-property-editor-callback---the-big-one-35-properties)
+      - [4.3.7 History (Undo/Redo) Callback](#437-history-undoredo-callback)
+    - [4.4 Helper Functions - The "Utility Belt"](#44-helper-functions---the-utility-belt)
+      - [4.4.1 The clean\_figure\_dict() Function - Data Sanitizer](#441-the-clean_figure_dict-function---data-sanitizer)
+      - [4.4.2 The create\_initial\_figure() Function - Default Canvas](#442-the-create_initial_figure-function---default-canvas)
+      - [4.4.3 Data Parsing Functions - Understanding User Input](#443-data-parsing-functions---understanding-user-input)
+      - [4.4.4 Inspector Control Generation - Dynamic UI Building](#444-inspector-control-generation---dynamic-ui-building)
+      - [4.4.5 Application Launch - The Final Piece](#445-application-launch---the-final-piece)
+    - [4.5 Complete Callback Reference Table](#45-complete-callback-reference-table)
+  - [5. Complete Feature Documentation - Your User Manual](#5-complete-feature-documentation---your-user-manual)
+    - [5.1 Plot Types and Chart Creation - Your 26+ Chart Arsenal](#51-plot-types-and-chart-creation---your-26-chart-arsenal)
+      - [5.1.1 Basic 2D Charts - Where Most Analysis Starts](#511-basic-2d-charts---where-most-analysis-starts)
+      - [5.1.2 Statistical Charts - For Data Scientists](#512-statistical-charts---for-data-scientists)
+      - [5.1.3 3D Charts - When Two Dimensions Aren't Enough](#513-3d-charts---when-two-dimensions-arent-enough)
+      - [5.1.4 Specialized Charts - For Specific Use Cases](#514-specialized-charts---for-specific-use-cases)
+      - [5.1.5 Geographic Charts - Map Your Data](#515-geographic-charts---map-your-data)
+    - [5.2 Property Editing System - Fine-Tune Everything](#52-property-editing-system---fine-tune-everything)
+      - [5.2.1 How to Use the Property Inspector](#521-how-to-use-the-property-inspector)
+      - [5.2.2 Trace Properties - 35+ Customization Options](#522-trace-properties---35-customization-options)
+      - [5.2.3 Figure (Layout) Properties](#523-figure-layout-properties)
+      - [5.2.4 Annotation Properties](#524-annotation-properties)
+      - [5.2.5 Shape Properties](#525-shape-properties)
+    - [5.3 Drawing and Annotation Tools - Make Your Charts Talk](#53-drawing-and-annotation-tools---make-your-charts-talk)
+      - [5.3.1 The Drawing Toolbar - Your Creative Tools](#531-the-drawing-toolbar---your-creative-tools)
+      - [5.3.2 Adding Text Annotations - Step by Step](#532-adding-text-annotations---step-by-step)
+      - [5.3.3 Adding Images - Overlay Reference Pictures](#533-adding-images---overlay-reference-pictures)
+    - [5.4 Data Management - Load, Edit, Clean](#54-data-management---load-edit-clean)
+      - [5.4.1 Loading Data - Three Options](#541-loading-data---three-options)
+      - [5.4.2 Viewing Data - Three Inspection Modes](#542-viewing-data---three-inspection-modes)
+      - [5.4.3 Editing Data - Direct Manipulation](#543-editing-data---direct-manipulation)
+    - [5.5 Session Management - Save and Share Your Work](#55-session-management---save-and-share-your-work)
+      - [5.5.1 What Gets Saved in a Session?](#551-what-gets-saved-in-a-session)
+      - [5.5.2 Saving Your Work](#552-saving-your-work)
+      - [5.5.3 Loading a Previous Session](#553-loading-a-previous-session)
+    - [5.6 Code Export - Take Your Work Anywhere](#56-code-export---take-your-work-anywhere)
+      - [5.6.1 How Code Export Works](#561-how-code-export-works)
+      - [5.6.2 The Generated Code](#562-the-generated-code)
+      - [5.6.3 Using Exported Code](#563-using-exported-code)
+    - [5.7 Undo/Redo System - Never Lose Your Work](#57-undoredo-system---never-lose-your-work)
+      - [5.7.1 What Can Be Undone?](#571-what-can-be-undone)
+      - [5.7.2 Using Undo/Redo](#572-using-undoredo)
+      - [5.7.3 Understanding the History Stack](#573-understanding-the-history-stack)
+    - [5.8 Template System - Instant Professional Styling](#58-template-system---instant-professional-styling)
+      - [5.8.1 Available Templates (10 Built-in)](#581-available-templates-10-built-in)
+      - [5.8.2 Applying a Template](#582-applying-a-template)
+      - [5.8.3 Template Visual Comparison](#583-template-visual-comparison)
+    - [5.9 View Tools - Navigate Your Visualization](#59-view-tools---navigate-your-visualization)
+      - [5.9.1 Navigation Controls (VIEW Tab)](#591-navigation-controls-view-tab)
+      - [5.9.2 Interactive Features (Built into Canvas)](#592-interactive-features-built-into-canvas)
+    - [5.10 Selection and Statistics - Interactive Analysis](#510-selection-and-statistics---interactive-analysis)
+      - [5.10.1 Lasso Selection](#5101-lasso-selection)
+      - [5.10.2 Box Selection](#5102-box-selection)
+      - [5.10.3 Remove Selected Points](#5103-remove-selected-points)
+
 
 ---
 
 ## 1. Introduction
 
+> 💡 **Tips:** This section explains WHY this project exists, WHAT problem it solves, and WHO benefits from it. If you've ever been frustrated changing a plot color in Python and having to re-run your entire script, this project is for you!
+
 ### 1.1 Project Background and Motivation
 
-The genesis of this project stems from a direct requirement articulated by Professor Puneet Rana during the MATH 4710 course. On October 29, 2024, Professor Rana presented a reference video demonstrating MATLAB's Figure Tool capabilities and posed the following challenge:
+#### 1.1.1 The Inspiration: MATLAB's Figure Tool
 
-> *"Hello Tony, I need similar Editable framework using Python... After you construct the image in Python, you should have some option on the graph to Edit graph."*
-> — Professor Puneet Rana, October 29, 2024
+The genesis of this project stems from a direct requirement articulated by a reference video demonstrating MATLAB's Figure Tool capabilities: [YouTube Link](https://www.youtube.com/watch?v=owKwqPyg5bk).
 
-This request highlighted a significant gap in the Python data science ecosystem. While Python has become the de facto standard for data analysis and machine learning, its visualization workflow remains fundamentally different from MATLAB's interactive approach. In MATLAB, users can create a figure and then use the Figure Tool to:
+**What is MATLAB's Figure Tool?**
 
-- Zoom and pan interactively
-- Click on data points to see their values (datatips)
-- Add text annotations and arrows
-- Modify colors, line styles, and markers
-- Adjust layout and axis properties
-- Save the modified figure
+MATLAB is a commercial software widely used in engineering and scientific computing. One of its most beloved features is the **Figure Tool** — a graphical interface that lets you edit charts after they're created, just like editing images in PowerPoint or Photoshop.
 
-In contrast, traditional Python visualization workflows follow a "code-execute-view" paradigm where any modification requires editing source code and re-running the script. This creates friction in the data exploration process and presents a barrier for users transitioning from MATLAB to Python.
+Imagine this scenario:
+1. You create a line chart showing sales data
+2. Your boss says "Can you make the line red instead of blue?"
+3. In MATLAB: Click on the line → Change color → Done! ✅
+4. In Python: Go back to code → Find the color parameter → Change it → Re-run script → Wait for result 😫
 
-The MATLAB Figure Tool reference video ([YouTube Link](https://www.youtube.com/watch?v=owKwqPyg5bk)) demonstrates the following key capabilities that served as design targets for this project:
+This difference in workflow is what motivated this entire project.
 
-| Timestamp | Feature | Description |
-|-----------|---------|-------------|
-| 0:00 | Figure Tool Overview | Introduction to the interactive editing interface |
-| 0:20 | Save Figure | Exporting the current visualization |
-| 0:47 | Zoom by Scrolling | Mouse wheel zoom functionality |
-| 0:56 | Restore Home View | Reset to original viewport |
-| 1:01 | Zoom In and Out | Dedicated zoom controls |
-| 1:17 | Pan with Hand | Click-and-drag navigation |
-| 1:24 | Datatips | Hover to show data point values |
-| 1:51 | Adjust Plot Layout | Modify figure dimensions and margins |
-| 2:34 | Insert Plot Features | Add annotations, shapes, and text |
+#### 1.1.2 The Gap in Python's Ecosystem
 
-Professor Rana further clarified the requirements in subsequent communications:
+This request highlighted a significant gap in the Python data science ecosystem. While Python has become the de facto standard for data analysis and machine learning, its visualization workflow remains fundamentally different from MATLAB's interactive approach.
 
-> *"No.. after I run python code.. Your graphics should be editable like MATLAB. It's like GUI - Graphic User Interface."*
-> — Professor Puneet Rana, October 31, 2024
+**What MATLAB Users Can Do (That Python Users Can't):**
 
-And provided a technical reference for GUI development approaches:
+| MATLAB Capability | What It Means | Python Equivalent? |
+|-------------------|---------------|-------------------|
+| Zoom and pan interactively | Use mouse to explore different parts of a chart | ⚠️ Limited (only some libraries) |
+| Click on data points for values | Hover or click to see exact (x, y) coordinates | ⚠️ Partial (Plotly has hover) |
+| Add text annotations and arrows | Draw arrows pointing to important data points | ❌ Requires code |
+| Modify colors, line styles | Click element → Change its appearance | ❌ Requires code |
+| Adjust layout and axis properties | Drag to resize, change titles | ❌ Requires code |
+| Save the modified figure | Export your edited work | ⚠️ Partial |
 
-> *"There are many ways to make GUI.. you can choose best as per your level."*
-> — Professor Puneet Rana, November 1, 2024 (with [StackOverflow reference](https://stackoverflow.com/questions/15507009/can-python-make-matlab-style-guis))
+**The Traditional Python Workflow (Before PyFigureEditor):**
+
+```python
+# Step 1: Write code
+import matplotlib.pyplot as plt
+plt.plot([1, 2, 3], [4, 5, 6], color='blue')
+plt.title('My Chart')
+plt.show()
+
+# Step 2: See result... Hmm, want to change color to red?
+
+# Step 3: Go back to code, change 'blue' to 'red'
+plt.plot([1, 2, 3], [4, 5, 6], color='red')  # Modified
+plt.title('My Chart')
+plt.show()
+
+# Step 4: Re-run entire script... Wait again...
+# Step 5: Still not right? Repeat steps 3-4 endlessly! 😭
+```
+
+This creates friction in the data exploration process and presents a barrier for users transitioning from MATLAB to Python.
+
+#### 1.1.3 MATLAB Figure Tool Feature Reference
+
+The MATLAB Figure Tool reference video demonstrates the following key capabilities that served as design targets for this project:
+
+| Timestamp | Feature | Description | PyFigureEditor Implementation |
+|-----------|---------|-------------|-------------------------------|
+| 0:00 | Figure Tool Overview | Introduction to the interactive editing interface | ✅ Full GUI with Ribbon interface |
+| 0:20 | Save Figure | Exporting the current visualization | ✅ Session save/load as JSON |
+| 0:47 | Zoom by Scrolling | Mouse wheel zoom functionality | ✅ `dragmode="zoom"` |
+| 0:56 | Restore Home View | Reset to original viewport | ✅ `fig.update_xaxes(autorange=True)` |
+| 1:01 | Zoom In and Out | Dedicated zoom controls | ✅ VIEW tab zoom buttons |
+| 1:17 | Pan with Hand | Click-and-drag navigation | ✅ `dragmode="pan"` |
+| 1:24 | Datatips | Hover to show data point values | ✅ Built-in Plotly feature |
+| 1:51 | Adjust Plot Layout | Modify figure dimensions and margins | ✅ Layout property editor |
+| 2:34 | Insert Plot Features | Add annotations, shapes, and text | ✅ ANNOTATE tab with 5 shape tools |
 
 ### 1.2 Problem Statement
 
-The fundamental problem addressed by this project can be formally stated as follows:
+> 💡 **Tips:** This section formally defines the problems we're solving. In academic projects, clearly stating the problem is crucial because it shows you understand what needs to be fixed before jumping into solutions.
+
+#### 1.2.1 The Primary Problem
 
 **Primary Problem:** Python's standard visualization libraries (Matplotlib, Seaborn, Plotly) generate static or semi-interactive outputs that cannot be fully edited through a graphical interface after creation. Users must return to source code to make modifications, breaking the flow of data exploration.
 
-**Secondary Problems:**
+**Let's break this down in simple terms:**
 
-1. **Steep Learning Curve:** Each visualization library has its own API, requiring users to memorize extensive documentation to make even simple changes.
+```
+Traditional Workflow:          PyFigureEditor Workflow:
+                              
+   [Write Code]                    [Click Buttons]
+        ↓                               ↓
+   [Run Script]                    [See Chart Instantly]
+        ↓                               ↓
+   [See Chart]                     [Click on Element]
+        ↓                               ↓
+   [Want Changes?]                 [Change Properties]
+        ↓                               ↓
+   [Edit Code Again] ←──┐          [Apply] → Done! ✅
+        ↓               │
+   [Re-run Script]      │
+        ↓               │
+   [Still Wrong?] ──────┘
+```
 
-2. **No Unified Interface:** Different plot types often require different syntax, making it difficult to switch between visualizations.
+#### 1.2.2 Secondary Problems (Pain Points)
 
-3. **Limited Persistence:** There is no standard way to save an "editing session" that preserves all modifications made to a figure.
+**Problem 1: Steep Learning Curve**
 
-4. **Code-Visualization Disconnect:** Changes made through limited interactive features (like Plotly's built-in zoom) are not reflected back to code, making reproducibility challenging.
+Each visualization library has its own API (Application Programming Interface), requiring users to memorize extensive documentation to make even simple changes.
 
-**Formal Requirements:**
+```python
+# To change line color in different libraries:
+
+# Matplotlib:
+ax.plot(x, y, color='red')
+ax.lines[0].set_color('red')  # After creation
+
+# Plotly:
+fig.update_traces(line_color='red')
+fig.data[0].line.color = 'red'  # Alternative
+
+# Seaborn:
+# Good luck finding where to change it! 😅
+```
+
+**Problem 2: No Unified Interface**
+
+Different plot types often require different syntax, making it difficult to switch between visualizations.
+
+```python
+# Creating different chart types requires completely different code:
+
+# Scatter plot
+px.scatter(df, x='col1', y='col2')
+
+# Bar chart
+px.bar(df, x='category', y='value')
+
+# 3D surface
+go.Figure(data=[go.Surface(z=z_data)])
+
+# Candlestick
+go.Figure(data=[go.Candlestick(x=dates, open=open, high=high, low=low, close=close)])
+
+# Each one is completely different syntax! 😵
+```
+
+**Problem 3: Limited Persistence**
+
+There is no standard way to save an "editing session" that preserves all modifications made to a figure.
+
+```python
+# You can save the image, but not the editable state!
+fig.write_image("output.png")  # Static image - can't edit later
+fig.write_html("output.html")  # Can view, but can't continue editing
+
+# What if you want to save your work and continue tomorrow?
+# Answer: You can't... until PyFigureEditor! 🎉
+```
+
+**Problem 4: Code-Visualization Disconnect**
+
+Changes made through limited interactive features (like Plotly's built-in zoom) are not reflected back to code, making reproducibility challenging.
+
+```python
+# You zoom in on a chart using the mouse...
+# But how do you recreate that exact view in code?
+# You have to manually figure out the axis ranges!
+
+# PyFigureEditor solution: Auto-generates code for ANY state!
+```
+
+#### 1.2.3 Formal Requirements
 
 The solution must provide:
 
-| Requirement ID | Description | Priority |
-|----------------|-------------|----------|
-| R1 | Web-based GUI accessible through a browser | Critical |
-| R2 | Support for multiple chart types (minimum 10) | Critical |
-| R3 | Real-time property editing without code changes | Critical |
-| R4 | Drawing and annotation capabilities | High |
-| R5 | Undo/redo functionality | High |
-| R6 | Session save/load functionality | High |
-| R7 | Automatic Python code generation | Medium |
-| R8 | Data import/export capabilities | Medium |
-| R9 | Production deployment capability | Medium |
+| Requirement ID | Description | Priority | How We Solve It |
+|----------------|-------------|----------|-----------------|
+| R1 | Web-based GUI accessible through a browser | Critical | Dash framework → runs in any browser |
+| R2 | Support for multiple chart types | Critical | 26+ chart types implemented |
+| R3 | Real-time property editing without code changes | Critical | Inspector panel with Apply button |
+| R4 | Drawing and annotation capabilities | High | ANNOTATE tab with 5 shape tools |
+| R5 | Undo/redo functionality | High | `HistoryStack` class with 50 states |
+| R6 | Session save/load functionality | High | JSON serialization via `FigureStore` |
+| R7 | Automatic Python code generation | Medium | `CodeGenerator` class |
+| R8 | Data import/export capabilities | Medium | CSV upload + demo data generator |
+| R9 | Production deployment capability | Medium | Deployed to PythonAnywhere |
 
 ### 1.3 Project Objectives
 
-The objectives of this project are organized into three tiers:
+> 💡 **Tips:** Objectives are organized into "must have," "should have," and "nice to have" tiers. This is a common software engineering practice called **MoSCoW prioritization** (Must, Should, Could, Won't). It helps you focus on critical features first.
 
-**Tier 1 - Core Objectives (Must Have):**
+#### 1.3.1 Tier 1 - Core Objectives (Must Have)
 
-1. Develop a functional web-based GUI that allows users to create and edit Plotly figures interactively
-2. Implement a property inspector that displays and allows modification of element properties
-3. Provide at least 15 different chart types
-4. Enable zoom, pan, and reset view controls
-5. Deploy the application to a publicly accessible server
+These are the features without which the project would be considered a failure:
 
-**Tier 2 - Enhanced Objectives (Should Have):**
+| Objective | Status | Implementation Location |
+|-----------|--------|-------------------------|
+| 1. Develop a functional web-based GUI | ✅ Done | `app.py` lines 846-1187 (Layout) |
+| 2. Implement a property inspector | ✅ Done | `app.py` lines 1767-2090 (Inspector callbacks) |
+| 3. Provide at least 15 chart types | ✅ Done | 26+ types in PLOTS tab |
+| 4. Enable zoom, pan, reset controls | ✅ Done | VIEW tab implementation |
+| 5. Deploy to public server | ✅ Done | [zye.pythonanywhere.com](https://zye.pythonanywhere.com/) |
 
-1. Implement drawing tools for shapes (line, rectangle, circle)
-2. Add text annotation capabilities with arrow support
-3. Create an undo/redo system with history stack
-4. Develop session save/load functionality
-5. Build a data management interface for CSV import
+#### 1.3.2 Tier 2 - Enhanced Objectives (Should Have)
 
-**Tier 3 - Advanced Objectives (Nice to Have):**
+These significantly improve the user experience:
 
-1. Automatic Python code generation from current figure state
-2. Smart column type inference for plot generation
-3. Real-time data editing through DataTable integration
-4. Background image overlay support
-5. Multiple theme presets
+| Objective | Status | Implementation Location |
+|-----------|--------|-------------------------|
+| 1. Drawing tools for shapes | ✅ Done | ANNOTATE tab, `dragmode` callbacks |
+| 2. Text annotation with arrows | ✅ Done | `add_annotation()` implementation |
+| 3. Undo/redo system | ✅ Done | `HistoryStack` class (lines 570-636) |
+| 4. Session save/load | ✅ Done | `serialize_session()` / `load_session()` |
+| 5. CSV import interface | ✅ Done | DATA tab with `dcc.Upload` |
+
+#### 1.3.3 Tier 3 - Advanced Objectives (Nice to Have)
+
+These are bonus features that make the project stand out:
+
+| Objective | Status | Notes |
+|-----------|--------|-------|
+| 1. Auto code generation | ✅ Done | `CodeGenerator` class generates reproducible Python code |
+| 2. Smart column inference | ✅ Done | `generate_smart_plot_code()` analyzes DataFrame columns |
+| 3. DataTable integration | ✅ Done | Interactive data editing in DATA tab |
+| 4. Background image overlay | ✅ Done | Image upload in ANNOTATE tab |
+| 5. Multiple theme presets | ✅ Done | Theme dropdown in Layout properties |
 
 ### 1.4 Scope and Deliverables
 
-**In Scope:**
+> 💡 **Tips:** Scope defines what's IN and OUT of your project. This is critical for setting expectations and avoiding "scope creep" (when a project keeps growing beyond original plans).
 
-- Web-based application using Dash/Plotly
-- 2D and 3D chart types
-- Geographic/map visualizations
-- Statistical plots (box, violin, histogram)
-- Financial charts (candlestick)
-- Interactive property editing
-- Shape drawing and annotation
-- Session management
-- Deployment to PythonAnywhere
+#### 1.4.1 What's Included (In Scope)
 
-**Out of Scope:**
+| Category | Specific Features |
+|----------|-------------------|
+| **Framework** | Web-based application using Dash/Plotly |
+| **2D Charts** | Scatter, Line, Bar, Area, Bubble, Histogram, Box, Violin, Pie, Heatmap |
+| **3D Charts** | Scatter3D, Line3D, Surface, Mesh3D |
+| **Geographic** | Scatter Geo, Choropleth, Globe projection |
+| **Specialized** | Candlestick, Waterfall, Funnel, Treemap, Sunburst, Polar, Ternary |
+| **Statistical** | Scatter Matrix, Parallel Coordinates |
+| **Editing** | Property inspector with 35+ editable properties |
+| **Drawing** | Line, Rectangle, Circle, Freeform, Polygon |
+| **Annotation** | Text labels, arrows, images |
+| **Persistence** | Session save/load as JSON |
+| **Deployment** | Live on PythonAnywhere |
 
-- Real-time collaborative editing (multi-user)
-- Mobile-native applications
-- Offline desktop executables
-- Integration with external databases
-- Animation/video export
-- Machine learning model integration
+#### 1.4.2 What's NOT Included (Out of Scope)
 
-**Deliverables:**
+| Feature | Why It's Out of Scope |
+|---------|----------------------|
+| Real-time collaborative editing | Would require WebSocket/real-time sync infrastructure |
+| Mobile-native applications | Dash is web-based; mobile apps need React Native/Flutter |
+| Offline desktop executables | Would need PyInstaller/Electron packaging |
+| External database integration | Focus is on visualization, not data storage |
+| Animation/video export | Complex feature requiring additional libraries |
+| Machine learning integration | Outside the scope of a visualization tool |
 
-| Deliverable | Description | Location |
-|-------------|-------------|----------|
-| D1 | Jupyter Notebook Implementation | `Final_Project_Implementation.ipynb` |
-| D2 | Standalone Python Application | `app.py` |
-| D3 | Technical Documentation | `README.md` (this document) |
-| D4 | Live Deployment | https://zye.pythonanywhere.com/ |
-| D5 | Source Code Repository | GitHub Repository |
+#### 1.4.3 Project Deliverables
+
+| ID | Deliverable | Description | Location |
+|----|-------------|-------------|----------|
+| D1 | **Jupyter Notebook** | Educational version with step-by-step explanations | `Final_Project_Implementation.ipynb` |
+| D2 | **Standalone App** | Production-ready 2,696-line Python application | `app.py` |
+| D3 | **Documentation** | This comprehensive technical report | `README.md` |
+| D4 | **Live Demo** | Publicly accessible deployment | [zye.pythonanywhere.com](https://zye.pythonanywhere.com/) |
+| D5 | **Source Code** | Complete codebase with version control | [GitHub Repository](https://github.com/1235357/PyFigureEditor) |
+
+#### 1.4.4 Code Statistics Summary
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    PyFigureEditor Stats                     │
+├─────────────────────────────────────────────────────────────┤
+│  Total Lines of Code        │  2,696 lines                  │
+│  Core Classes               │  4 (TraceDataset, FigureStore,│
+│                             │     HistoryStack, CodeGenerator)
+│  Callbacks                  │  24+ reactive callbacks        │
+│  Chart Types Supported      │  26+ types                     │
+│  Editable Properties        │  35+ properties                │
+│  UI Sections                │  16 distinct sections          │
+│  Deployment Status          │  ✅ Production                 │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## 2. Literature Review and Technical Foundation
 
+> 💡 **Tips:** This section is like a "research phase" documentation. Before building anything, good engineers study existing solutions. We looked at many Python visualization libraries and chose the best one for our needs. This section explains WHY we made the choices we did.
+
 This section provides a comprehensive analysis of the existing technologies, frameworks, and approaches that informed the design and implementation of PyFigureEditor. Understanding this foundation is essential for appreciating the architectural decisions made throughout the project.
 
 ### 2.1 Overview of Python Visualization Libraries
 
+> 💡 **Tips:** Python has MANY libraries for creating charts. Each has its own strengths and weaknesses. Choosing the right one is like choosing the right tool for a job — you wouldn't use a hammer to screw in a nail!
+
 Python's ecosystem offers numerous visualization libraries, each with distinct philosophies, capabilities, and limitations. A thorough understanding of these options was necessary to select the most appropriate foundation for this project.
 
-#### 2.1.1 Matplotlib: The Foundation
+#### 2.1.1 Matplotlib: The Grandfather of Python Plotting
 
-Matplotlib, created by John D. Hunter in 2003, is the foundational visualization library in Python. It follows an object-oriented architecture with two primary interfaces:
+**What is Matplotlib?**
+
+Matplotlib, created by John D. Hunter in 2003, is the foundational visualization library in Python. It was designed to mimic MATLAB's plotting interface (hence the name "Mat-plot-lib").
+
+**Think of it like:** Microsoft Paint for data visualization — powerful, fundamental, but requires effort for fancy results.
 
 ```python
-# Pyplot Interface (MATLAB-like)
+# Two ways to use Matplotlib:
+
+# Way 1: Pyplot Interface (MATLAB-like, beginner-friendly)
 import matplotlib.pyplot as plt
 plt.plot([1, 2, 3, 4], [1, 4, 2, 3])
 plt.title('Simple Plot')
 plt.show()
 
-# Object-Oriented Interface
+# Way 2: Object-Oriented Interface (more control, professional)
 fig, ax = plt.subplots()
 ax.plot([1, 2, 3, 4], [1, 4, 2, 3])
 ax.set_title('Simple Plot')
@@ -340,815 +1377,1633 @@ plt.show()
 ```
 
 **Strengths:**
-- Highly customizable with fine-grained control
-- Extensive documentation and community support
-- Integration with NumPy and Pandas
-- Publication-quality static figures
+| Strength | What It Means | Example |
+|----------|---------------|---------|
+| Highly customizable | Control every pixel | Change font size of tick labels |
+| Huge community | Lots of StackOverflow answers | Any question already answered |
+| NumPy/Pandas integration | Works with your data tools | `ax.plot(df['x'], df['y'])` |
+| Publication-quality | Academic papers accept it | Export to PDF/SVG |
 
-**Limitations for This Project:**
-- Primarily designed for static output
-- Limited built-in interactivity
-- Web integration requires additional libraries (mpld3, Bokeh backend)
-- No native GUI for property editing
+**Why We DIDN'T Choose Matplotlib:**
+| Limitation | Problem for Our Project |
+|------------|------------------------|
+| Static output | Charts are images, can't click on them |
+| No built-in interactivity | Can't zoom/pan without extra code |
+| Web integration is hacky | Need `mpld3` or convert to other formats |
+| No property editor | Can't click-and-edit after creation |
 
-#### 2.1.2 Seaborn: Statistical Visualization
+```python
+# The fundamental problem with Matplotlib for our use case:
+plt.plot([1,2,3], [4,5,6], color='blue')
+plt.show()  # This shows a static image!
 
-Seaborn, built on top of Matplotlib, provides a high-level interface for statistical graphics:
+# To change color, you MUST go back to code:
+plt.plot([1,2,3], [4,5,6], color='red')  # Edit code
+plt.show()  # Run again
+
+# There's no way to click on the blue line and change it to red!
+```
+
+#### 2.1.2 Seaborn: Beautiful Statistical Charts
+
+**What is Seaborn?**
+
+Seaborn is built ON TOP of Matplotlib, providing prettier defaults and easier statistical visualizations.
+
+**Think of it like:** Instagram filters for Matplotlib — same underlying engine, but prettier output with less effort.
 
 ```python
 import seaborn as sns
+import pandas as pd
+
+# Load built-in dataset
 tips = sns.load_dataset("tips")
+
+# One-liner creates a beautiful box plot!
 sns.boxplot(x="day", y="total_bill", data=tips)
 ```
 
 **Strengths:**
-- Beautiful default styles
-- Built-in statistical aggregations
-- Excellent for exploratory data analysis
+| Strength | What It Means |
+|----------|---------------|
+| Beautiful defaults | Charts look professional immediately |
+| Statistical focus | Built-in mean, confidence intervals, distributions |
+| Less code | `sns.boxplot(...)` vs 10 lines of Matplotlib |
 
-**Limitations for This Project:**
-- Inherits Matplotlib's static nature
-- No interactive editing capabilities
-- Limited chart type variety beyond statistics
+**Why We DIDN'T Choose Seaborn:**
+| Limitation | Problem for Our Project |
+|------------|------------------------|
+| Built on Matplotlib | Inherits all of Matplotlib's static limitations |
+| Limited chart types | Great for statistics, poor for maps/3D/finance |
+| No interactivity | Same static output problem |
 
-#### 2.1.3 Bokeh: Interactive Web Visualizations
+#### 2.1.3 Bokeh: Interactive Web Charts
 
-Bokeh is designed specifically for creating interactive visualizations for web browsers:
+**What is Bokeh?**
+
+Bokeh (pronounced "BO-kay", like the photography term) is designed specifically for creating interactive visualizations in web browsers.
+
+**Think of it like:** A JavaScript charting library that you can use from Python.
 
 ```python
 from bokeh.plotting import figure, show
-p = figure(title="Interactive Plot", tools="pan,wheel_zoom,box_zoom,reset")
+
+# Create figure with interactive tools
+p = figure(
+    title="Interactive Plot", 
+    tools="pan,wheel_zoom,box_zoom,reset,hover"  # Built-in interactivity!
+)
 p.circle([1, 2, 3, 4, 5], [6, 7, 2, 4, 5], size=15)
-show(p)
+show(p)  # Opens in browser with zoom/pan working!
 ```
 
 **Strengths:**
-- Native web rendering
-- Good interactivity (zoom, pan, hover)
-- Bokeh Server for real-time updates
-- Standalone HTML output
+| Strength | What It Means |
+|----------|---------------|
+| Web-native | Outputs HTML that works in any browser |
+| Good interactivity | Zoom, pan, hover tooltips built-in |
+| Bokeh Server | Can create real-time updating dashboards |
+| Standalone HTML | Send someone a single .html file |
 
-**Limitations for This Project:**
-- Less extensive chart type library than Plotly
-- Callback system less intuitive than Dash
-- Property editing requires custom implementation
+**Why We DIDN'T Choose Bokeh:**
+| Limitation | Problem for Our Project |
+|------------|------------------------|
+| Fewer chart types | No candlestick, limited 3D, fewer maps |
+| Complex callbacks | Writing interactive apps is harder than Dash |
+| No property editor | Would need to build from scratch |
+| Separate from Plotly | Can't use with Dash framework |
 
-#### 2.1.4 Plotly: The Selected Foundation
+#### 2.1.4 Plotly: The Winner! 🏆
 
-Plotly emerged as the optimal choice for this project. It provides:
+**What is Plotly?**
+
+Plotly is a modern, interactive visualization library that outputs web-based charts. It has both a JavaScript library and Python/R bindings.
+
+**Think of it like:** A professional charting library used by companies like Netflix, Tesla, and NASA.
 
 ```python
-import plotly.express as px
-import plotly.graph_objects as go
+import plotly.express as px  # High-level, easy API
+import plotly.graph_objects as go  # Low-level, full control
 
-# High-level Express API
+# High-level Express API (one-liner!)
 fig = px.scatter(df, x="sepal_width", y="sepal_length", color="species")
+fig.show()
 
-# Low-level Graph Objects API
-fig = go.Figure(data=[go.Scatter(x=[1, 2, 3], y=[4, 5, 6])])
+# Low-level Graph Objects API (full control)
+fig = go.Figure(data=[
+    go.Scatter(
+        x=[1, 2, 3], 
+        y=[4, 5, 6],
+        mode="lines+markers",
+        marker=dict(color="red", size=10),
+        line=dict(width=2)
+    )
+])
 fig.update_layout(title="My Plot")
+fig.show()
 ```
 
-**Strengths Critical for This Project:**
-1. **Comprehensive Chart Library:** 40+ chart types including 3D, maps, and financial charts
-2. **Native Interactivity:** Zoom, pan, hover, selection built-in
-3. **JSON-Based Architecture:** Figures are serializable dictionaries
-4. **Dash Integration:** First-class support for Dash applications
-5. **Editable Mode:** Built-in `config={'editable': True}` option
+**Why Plotly is PERFECT for This Project:**
 
-**Plotly's Figure Architecture:**
+| Strength | Why It Matters | Code Example |
+|----------|----------------|--------------|
+| **40+ chart types** | Scatter, Bar, 3D, Maps, Financial — all in one library | `px.scatter_3d()`, `go.Candlestick()` |
+| **Native interactivity** | Zoom, pan, hover work automatically | No extra code needed! |
+| **JSON-based** | Charts are dictionaries, easy to save/load | `fig.to_dict()`, `fig.to_json()` |
+| **Dash integration** | Same company made Dash framework | `dcc.Graph(figure=fig)` |
+| **Editable mode** | Can enable click-to-edit on charts | `config={'editable': True}` |
 
-Understanding Plotly's internal structure was crucial for implementing the property editor:
+#### 2.1.5 The Secret Weapon: Plotly's JSON Architecture
+
+> 💡 **Tips:** This is the KEY insight that makes PyFigureEditor possible! Plotly stores charts as dictionaries (JSON), not as compiled binary objects. This means we can read and modify ANY property!
+
+**Understanding Plotly's Internal Structure:**
+
+Every Plotly figure is just a Python dictionary with two main keys: `data` and `layout`.
 
 ```python
-fig.to_dict()
-# Returns:
+# Create a simple figure
+fig = go.Figure()
+fig.add_trace(go.Scatter(x=[1,2,3], y=[4,5,6], name="My Line"))
+fig.update_layout(title="Example")
+
+# Look inside!
+print(fig.to_dict())
+```
+
+**Output (simplified):**
+```python
 {
-    "data": [
+    "data": [                          # List of all visual elements (traces)
         {
-            "type": "scatter",
-            "x": [1, 2, 3],
-            "y": [4, 5, 6],
-            "mode": "lines+markers",
-            "marker": {"color": "blue", "size": 10},
-            "line": {"width": 2, "dash": "solid"},
-            "name": "Trace 0"
+            "type": "scatter",         # What kind of chart
+            "x": [1, 2, 3],            # X coordinates
+            "y": [4, 5, 6],            # Y coordinates
+            "mode": "lines",           # Lines, markers, or both
+            "name": "My Line",         # Legend label
+            "marker": {                # Point appearance
+                "color": "blue",
+                "size": 6,
+                "symbol": "circle"
+            },
+            "line": {                  # Line appearance
+                "color": "blue", 
+                "width": 2,
+                "dash": "solid"
+            }
         }
     ],
-    "layout": {
-        "title": {"text": "My Figure"},
-        "xaxis": {"title": {"text": "X Axis"}},
-        "yaxis": {"title": {"text": "Y Axis"}},
+    "layout": {                        # Overall chart settings
+        "title": {"text": "Example"},
+        "xaxis": {
+            "title": {"text": "X Axis"},
+            "range": [0, 4]
+        },
+        "yaxis": {
+            "title": {"text": "Y Axis"},
+            "range": [3, 7]
+        },
         "template": "plotly_white",
-        "shapes": [...],
-        "annotations": [...],
-        "images": [...]
+        "shapes": [...],               # Drawn rectangles, lines, etc.
+        "annotations": [...],          # Text labels
+        "images": [...]                # Background images
     }
 }
 ```
 
-This dictionary structure enables:
-- Direct property access and modification
-- JSON serialization for session save/load
-- Programmatic figure reconstruction
+**Why This Architecture Enables Our Project:**
 
-#### 2.1.5 Comparative Analysis Summary
+```python
+# Because it's a dictionary, we can:
 
-| Feature | Matplotlib | Seaborn | Bokeh | Plotly |
-|---------|------------|---------|-------|--------|
-| Web Native | ❌ | ❌ | ✅ | ✅ |
-| Interactivity | Limited | Limited | Good | Excellent |
-| Chart Types | Many | Statistical | Many | Most |
-| JSON Serializable | ❌ | ❌ | Partial | ✅ |
-| Dash Integration | Via Plotly | Via Plotly | Separate | Native |
-| Learning Curve | Steep | Moderate | Moderate | Moderate |
-| 3D Support | Basic | ❌ | Limited | Excellent |
-| Geo/Maps | Basemap | ❌ | Good | Excellent |
+# 1. READ any property
+current_color = fig.data[0].marker.color  # "blue"
+
+# 2. MODIFY any property
+fig.data[0].marker.color = "red"  # Change to red!
+
+# 3. SAVE the entire state
+with open("my_session.json", "w") as f:
+    json.dump(fig.to_dict(), f)
+
+# 4. LOAD it back later
+with open("my_session.json", "r") as f:
+    fig = go.Figure(json.load(f))
+
+# 5. GENERATE code to recreate it
+code = f"fig = go.Figure({fig.to_dict()})"
+```
+
+**This is exactly what MATLAB's Figure Tool does internally!**
+
+#### 2.1.6 Comparative Analysis Summary
+
+| Feature | Matplotlib | Seaborn | Bokeh | **Plotly** |
+|---------|------------|---------|-------|------------|
+| Web Native | ❌ No | ❌ No | ✅ Yes | ✅ **Yes** |
+| Interactivity | ⚠️ Limited | ⚠️ Limited | ✅ Good | ✅ **Excellent** |
+| Chart Types | ✅ Many | ⚠️ Statistical | ✅ Many | ✅ **Most (40+)** |
+| JSON Serializable | ❌ No | ❌ No | ⚠️ Partial | ✅ **Yes** |
+| Dash Integration | ⚠️ Via Plotly | ⚠️ Via Plotly | ❌ Separate | ✅ **Native** |
+| 3D Support | ⚠️ Basic | ❌ No | ⚠️ Limited | ✅ **Excellent** |
+| Geo/Maps | ⚠️ Basemap | ❌ No | ✅ Good | ✅ **Excellent** |
+| Learning Curve | 📈 Steep | 📉 Easy | 📊 Moderate | 📊 **Moderate** |
 
 **Conclusion:** Plotly's comprehensive feature set, JSON-based architecture, and native Dash integration made it the clear choice for implementing a MATLAB-style interactive figure editor.
 
 ### 2.2 MATLAB Figure Tool Analysis
 
-To replicate MATLAB's functionality, a detailed analysis of the Figure Tool was conducted based on the reference video and documentation.
+> 💡 **Tips:** To replicate something, you must first understand how it works. We carefully studied MATLAB's Figure Tool to identify which features to implement.
 
 #### 2.2.1 MATLAB Figure Tool Architecture
 
-MATLAB's Figure Tool operates on a hierarchical object model:
+MATLAB uses a hierarchical object model where every visual element is an "object" with properties:
 
 ```
-Figure (gcf)
-├── Axes (gca)
-│   ├── Line objects
-│   ├── Scatter objects
-│   ├── Bar objects
-│   ├── Surface objects
-│   └── Text objects
-├── UI Controls
-├── Legends
-└── Colorbars
+Figure (gcf - "get current figure")
+├── Axes (gca - "get current axes")
+│   ├── Line objects      ← The actual data lines
+│   ├── Scatter objects   ← The actual data points
+│   ├── Bar objects       ← The actual bars
+│   ├── Surface objects   ← 3D surfaces
+│   └── Text objects      ← Labels on the chart
+├── UI Controls           ← Buttons, sliders on the figure
+├── Legends               ← The legend box
+└── Colorbars             ← Color scale indicator
 ```
 
-Each object has properties that can be accessed and modified:
+**In MATLAB, you can access and modify any object:**
 
 ```matlab
-% MATLAB property access
+% Create a plot
 h = plot(1:10, rand(1,10));
-h.Color = 'red';
-h.LineWidth = 2;
-h.Marker = 'o';
+
+% h is now a "handle" to the line object
+% You can modify it directly!
+h.Color = 'red';           % Change color
+h.LineWidth = 2;           % Make thicker
+h.Marker = 'o';            % Add circle markers
+h.MarkerSize = 10;         % Make markers bigger
+h.DisplayName = 'My Data'; % Change legend text
+```
+
+**PyFigureEditor replicates this with Plotly's similar structure:**
+
+```python
+# Create a plot
+fig = px.line(x=[1,2,3,4,5], y=[2,4,3,5,4])
+
+# Access the trace (equivalent to MATLAB's handle)
+# fig.data[0] is like h in MATLAB
+
+# Modify it!
+fig.data[0].line.color = 'red'           # Change color
+fig.data[0].line.width = 2               # Make thicker
+fig.data[0].mode = 'lines+markers'       # Add markers
+fig.data[0].marker.size = 10             # Make markers bigger
+fig.data[0].name = 'My Data'             # Change legend text
 ```
 
 #### 2.2.2 Feature Mapping: MATLAB to PyFigureEditor
 
-| MATLAB Feature | MATLAB Implementation | PyFigureEditor Implementation |
-|----------------|----------------------|------------------------------|
-| Property Inspector | Built-in GUI panel | Custom Dash components |
-| Zoom | `zoom on` command | Plotly native + buttons |
-| Pan | `pan on` command | Plotly native + buttons |
-| Data Cursor | `datacursormode on` | Plotly hover tooltips |
-| Insert Text | `gtext()` function | Annotation modal |
-| Insert Arrow | Arrow annotation | Annotation with `showarrow=True` |
-| Insert Shape | Rectangle, ellipse tools | Drawing mode buttons |
-| Save Figure | `saveas()`, `exportgraphics()` | JSON session export |
-| Edit Plot | Property editor GUI | Dynamic property inspector |
+| MATLAB Feature | MATLAB Command | PyFigureEditor Implementation | Code Location |
+|----------------|----------------|-------------------------------|---------------|
+| Property Inspector | Built-in GUI panel | Custom Dash Inspector | `app.py` lines 1767-2090 |
+| Zoom | `zoom on` | Plotly native + VIEW tab | `dragmode="zoom"` |
+| Pan | `pan on` | Plotly native + VIEW tab | `dragmode="pan"` |
+| Data Cursor | `datacursormode on` | Plotly hover tooltips | Built-in |
+| Insert Text | `gtext()` function | Annotation modal | ANNOTATE tab |
+| Insert Arrow | Arrow annotation | `showarrow=True` | `add_annotation()` |
+| Insert Shape | Rectangle, ellipse tools | Drawing mode buttons | `dragmode="drawrect"` |
+| Save Figure | `saveas()`, `exportgraphics()` | JSON session export | `serialize_session()` |
+| Edit Plot | Property editor GUI | Dynamic property inspector | Inspector callbacks |
+| Undo | Ctrl+Z | HistoryStack class | `history_stack.undo()` |
 
-#### 2.2.3 Interaction Paradigms
+#### 2.2.3 Interaction Paradigms: Modal System
 
-MATLAB uses a **modal** interaction system where the figure enters different "modes":
-- Select mode (default)
-- Zoom mode
-- Pan mode
-- Data cursor mode
-- Edit mode
+**What is a "Modal" System?**
 
-PyFigureEditor replicates this through Plotly's `dragmode` property:
+MATLAB uses a **modal** interaction system where the figure enters different "modes." Only one mode is active at a time.
+
+```
+User clicks "Zoom" button
+        ↓
+Figure enters ZOOM MODE
+        ↓
+All mouse interactions now zoom (not pan or select)
+        ↓
+User clicks "Pan" button
+        ↓
+Figure enters PAN MODE
+        ↓
+All mouse interactions now pan (not zoom)
+```
+
+**PyFigureEditor replicates this with Plotly's `dragmode` property:**
 
 ```python
-# Equivalent to MATLAB's zoom on
+# MATLAB: zoom on
 fig.update_layout(dragmode="zoom")
+# Now mouse drag = zoom
 
-# Equivalent to MATLAB's pan on  
+# MATLAB: pan on  
 fig.update_layout(dragmode="pan")
+# Now mouse drag = pan
 
-# Drawing modes
-fig.update_layout(dragmode="drawrect")
-fig.update_layout(dragmode="drawline")
-fig.update_layout(dragmode="drawcircle")
+# Drawing modes (no MATLAB equivalent - we added these!)
+fig.update_layout(dragmode="drawrect")   # Draw rectangles
+fig.update_layout(dragmode="drawline")   # Draw lines
+fig.update_layout(dragmode="drawcircle") # Draw circles
+fig.update_layout(dragmode="drawopenpath")  # Freeform drawing
+fig.update_layout(dragmode="drawclosedpath") # Polygon drawing
+```
+
+**Our VIEW tab buttons simply change this `dragmode` property:**
+
+```python
+@app.callback(
+    Output("main-graph", "figure"),
+    Input("btn-zoom", "n_clicks"),
+    Input("btn-pan", "n_clicks"),
+    Input("btn-reset", "n_clicks"),
+    State("main-graph", "figure"),
+)
+def handle_view_tools(n_zoom, n_pan, n_reset, current_fig):
+    trigger = ctx.triggered_id
+    fig = go.Figure(current_fig)
+    
+    if trigger == "btn-zoom":
+        fig.update_layout(dragmode="zoom")
+    elif trigger == "btn-pan":
+        fig.update_layout(dragmode="pan")
+    elif trigger == "btn-reset":
+        fig.update_xaxes(autorange=True)
+        fig.update_yaxes(autorange=True)
+    
+    return fig
 ```
 
 ### 2.3 Web-Based GUI Frameworks for Python
 
-Several frameworks were evaluated for building the web-based GUI component.
+> 💡 **Tips:** Once we chose Plotly for charts, we needed a way to build the buttons, dropdowns, and panels around it. This is called a "GUI framework." We compared several options.
 
 #### 2.3.1 Framework Comparison
 
-| Framework | Type | Learning Curve | Plotly Integration | Real-time Updates |
-|-----------|------|----------------|-------------------|-------------------|
-| Flask + JS | Traditional | High | Manual | WebSocket |
-| Django + JS | Traditional | High | Manual | Channels |
-| Streamlit | Declarative | Low | Good | Automatic |
-| Gradio | ML-focused | Low | Limited | Automatic |
-| Panel | HoloViews | Moderate | Good | Good |
-| **Dash** | Reactive | Moderate | **Native** | **Callbacks** |
+| Framework | Type | Learning Curve | Plotly Integration | Real-time Updates | Our Assessment |
+|-----------|------|----------------|-------------------|-------------------|----------------|
+| Flask + JS | Traditional | 📈 High | Manual | WebSocket | Too much JavaScript |
+| Django + JS | Traditional | 📈 High | Manual | Channels | Overkill for this project |
+| Streamlit | Declarative | 📉 Low | Good | Automatic | Not enough control |
+| Gradio | ML-focused | 📉 Low | Limited | Automatic | Wrong use case |
+| Panel | HoloViews | 📊 Moderate | Good | Good | Less mature |
+| **Dash** | Reactive | 📊 Moderate | **Native** | **Callbacks** | **Winner!** 🏆 |
 
 #### 2.3.2 Why Dash Was Selected
 
-**Dash** (by Plotly) was selected for the following reasons:
+**Dash** (by Plotly) was selected for these key reasons:
 
-1. **Native Plotly Integration:** Dash is built by the same team that created Plotly. The `dcc.Graph` component accepts Plotly figures directly.
+**Reason 1: Native Plotly Integration**
 
-2. **Reactive Programming Model:** Dash's callback system provides a clean way to handle user interactions without writing JavaScript.
+Dash is built by the same team that created Plotly. The `dcc.Graph` component accepts Plotly figures directly — no conversion needed!
 
-3. **Component Ecosystem:** Dash Bootstrap Components (dbc) provides pre-built UI elements that match modern design standards.
-
-4. **Production Ready:** Dash applications can be deployed to standard WSGI servers.
-
-5. **No JavaScript Required:** The entire application can be written in Python.
-
-#### 2.3.3 Dash Architecture Overview
-
-Dash applications consist of two parts:
-
-**1. Layout (Declarative UI):**
 ```python
+import dash
+from dash import dcc, html
+import plotly.express as px
+
+app = dash.Dash(__name__)
+
+# Create a Plotly figure
+fig = px.scatter(x=[1,2,3], y=[4,5,6])
+
+# Put it directly in Dash!
 app.layout = html.Div([
-    dcc.Graph(id='my-graph'),
-    dcc.Slider(id='my-slider', min=0, max=10, value=5),
-    html.Div(id='output')
+    dcc.Graph(figure=fig)  # That's it! No conversion needed
 ])
 ```
 
-**2. Callbacks (Reactive Logic):**
+**Reason 2: Reactive Programming Model**
+
+Dash's callback system handles user interactions WITHOUT writing JavaScript:
+
 ```python
+# When slider changes, chart automatically updates
 @app.callback(
-    Output('my-graph', 'figure'),
+    Output('my-chart', 'figure'),
     Input('my-slider', 'value')
 )
-def update_graph(slider_value):
-    # This function runs when slider changes
-    return create_figure(slider_value)
+def update_chart(slider_value):
+    fig = px.scatter(x=[1,2,3], y=[v*slider_value for v in [1,2,3]])
+    return fig
 ```
 
-This separation of concerns maps well to the Model-View-Controller (MVC) pattern:
-- **Model:** Python data structures (DataFrames, FigureStore)
-- **View:** Dash layout components
-- **Controller:** Callback functions
+**Reason 3: Bootstrap Components**
+
+Dash Bootstrap Components (dbc) provides professional-looking UI elements:
+
+```python
+import dash_bootstrap_components as dbc
+
+# Professional button group
+dbc.ButtonGroup([
+    dbc.Button("Save", color="primary"),
+    dbc.Button("Load", color="secondary"),
+    dbc.Button("Delete", color="danger"),
+])
+
+# Clean tabs
+dbc.Tabs([
+    dbc.Tab(label="HOME", children=[...]),
+    dbc.Tab(label="DATA", children=[...]),
+    dbc.Tab(label="PLOTS", children=[...]),
+])
+```
+
+**Reason 4: Production Ready**
+
+Dash applications can be deployed to standard WSGI servers:
+
+```python
+# app.py
+app = dash.Dash(__name__)
+application = app.server  # This is a standard Flask server!
+
+# Can deploy to:
+# - PythonAnywhere (what we use)
+# - Heroku
+# - AWS
+# - Google Cloud
+# - Any WSGI-compatible host
+```
+
+**Reason 5: No JavaScript Required**
+
+The ENTIRE PyFigureEditor application (2,696 lines) is written in Python. Zero JavaScript!
+
+#### 2.3.3 Dash Architecture Overview
+
+> 💡 **Tips:** Dash apps have two parts: **Layout** (what the user sees) and **Callbacks** (how the app responds to user actions). This is similar to HTML (structure) and JavaScript (behavior).
+
+**Part 1: Layout (Declarative UI)**
+
+Layout defines WHAT components appear on the page:
+
+```python
+app.layout = html.Div([
+    # Header
+    html.H1("PyFigureEditor"),
+    
+    # The chart
+    dcc.Graph(id='main-graph', figure=initial_figure),
+    
+    # A slider
+    dcc.Slider(id='opacity-slider', min=0, max=1, value=0.5),
+    
+    # A dropdown
+    dcc.Dropdown(
+        id='color-dropdown',
+        options=[
+            {'label': 'Red', 'value': 'red'},
+            {'label': 'Blue', 'value': 'blue'},
+            {'label': 'Green', 'value': 'green'},
+        ],
+        value='blue'
+    ),
+    
+    # Output area
+    html.Div(id='status-message')
+])
+```
+
+**Part 2: Callbacks (Reactive Logic)**
+
+Callbacks define HOW the app responds to user interactions:
+
+```python
+@app.callback(
+    Output('main-graph', 'figure'),      # What to UPDATE
+    Output('status-message', 'children'), # Can have multiple outputs!
+    Input('opacity-slider', 'value'),    # What TRIGGERS the update
+    Input('color-dropdown', 'value'),    # Another trigger
+    State('main-graph', 'figure'),       # Data to READ (doesn't trigger)
+)
+def update_chart(opacity, color, current_figure):
+    # This function runs AUTOMATICALLY when slider or dropdown changes!
+    fig = go.Figure(current_figure)
+    fig.update_traces(opacity=opacity, marker_color=color)
+    return fig, f"Updated: opacity={opacity}, color={color}"
+```
+
+**The MVC Pattern Mapping:**
+
+This separation of concerns maps to the classic Model-View-Controller (MVC) pattern:
+
+| MVC Component | Dash Equivalent | PyFigureEditor Example |
+|---------------|-----------------|------------------------|
+| **Model** (Data) | Python classes | `FigureStore`, `HistoryStack`, `TraceDataset` |
+| **View** (UI) | Layout components | `html.Div`, `dcc.Graph`, `dbc.Button` |
+| **Controller** (Logic) | Callback functions | `@app.callback` decorated functions |
 
 ### 2.4 Reactive Programming Paradigm
 
-Understanding reactive programming is essential for comprehending how PyFigureEditor responds to user interactions.
+> 💡 **Tips:** This section explains the "magic" that makes PyFigureEditor feel responsive. Instead of constantly checking "did the user click anything?", we tell the computer "when this happens, do that."
 
 #### 2.4.1 What is Reactive Programming?
 
-Reactive programming is a declarative paradigm where the program specifies **what** should happen in response to events, rather than **how** to poll for changes.
+**Traditional (Imperative) Programming — The Old Way:**
 
-**Traditional (Imperative) Approach:**
 ```python
+# You have to manually check for changes in a loop
 while True:
-    if button_clicked():
+    if button_was_clicked():
         update_display()
-    if slider_moved():
+    if slider_was_moved():
         recalculate()
-    sleep(0.1)  # Polling
+    if dropdown_changed():
+        refresh_data()
+    time.sleep(0.1)  # Check every 100ms (polling)
 ```
 
-**Reactive (Declarative) Approach:**
+**Problems with this approach:**
+- Wastes CPU cycles checking things that didn't change
+- Code becomes a mess of if-statements
+- Easy to miss events between checks
+
+**Reactive (Declarative) Programming — The Modern Way:**
+
 ```python
+# Declare what should happen when things change
 @when(button.clicked)
-def handle_click():
+def on_button_click():
     update_display()
 
 @when(slider.changed)
-def handle_slider():
+def on_slider_change():
     recalculate()
+
+@when(dropdown.changed)
+def on_dropdown_change():
+    refresh_data()
+
+# No loop! The system handles it automatically
 ```
 
-#### 2.4.2 Dash's Callback System
+**Benefits:**
+- Only runs code when something actually changes
+- Clear cause-and-effect relationships
+- Easier to understand and maintain
+
+#### 2.4.2 Dash's Callback System: Input, Output, State
 
 Dash implements reactivity through **callbacks** with three types of dependencies:
 
-| Dependency | Purpose | Triggers Callback |
-|------------|---------|-------------------|
-| `Input` | Values that trigger the callback | Yes |
-| `State` | Values read but don't trigger | No |
-| `Output` | Components updated by callback | N/A |
+| Dependency | Symbol | Purpose | Triggers Callback? |
+|------------|--------|---------|-------------------|
+| `Output` | ← | What component to UPDATE | N/A (result) |
+| `Input` | → | What TRIGGERS the callback | ✅ Yes |
+| `State` | 📋 | What to READ (without triggering) | ❌ No |
 
 **Example with All Three:**
+
 ```python
 @app.callback(
-    Output('result', 'children'),      # What to update
-    Input('submit-btn', 'n_clicks'),   # What triggers update
-    State('input-field', 'value')      # Additional data needed
+    Output('result-display', 'children'),    # OUTPUT: Update this div's text
+    Input('submit-button', 'n_clicks'),      # INPUT: Triggered when clicked
+    State('name-input', 'value'),            # STATE: Read the name
+    State('email-input', 'value'),           # STATE: Read the email
 )
-def process_form(n_clicks, input_value):
-    if not n_clicks:
-        raise PreventUpdate
-    return f"Processed: {input_value}"
+def submit_form(n_clicks, name, email):
+    # This function ONLY runs when submit-button is clicked
+    # It does NOT run when name or email changes (they're State, not Input)
+    
+    if n_clicks is None:
+        return "Please fill the form"  # Initial state
+    
+    return f"Submitted: {name} ({email})"
+```
+
+**Why State is Important:**
+
+Without `State`, you'd need to either:
+1. Make name/email trigger submission (bad UX — submits while typing!)
+2. Use global variables (bad practice)
+
+```python
+# BAD: Using Input for everything
+@app.callback(
+    Output('result', 'children'),
+    Input('submit-btn', 'n_clicks'),
+    Input('name-input', 'value'),  # This triggers on EVERY keystroke!
+)
+def submit(n, name):
+    return f"Submitted: {name}"  # Runs as user types — not what we want!
+
+# GOOD: Using State for non-triggering values
+@app.callback(
+    Output('result', 'children'),
+    Input('submit-btn', 'n_clicks'),  # Only this triggers
+    State('name-input', 'value'),     # Read but don't trigger
+)
+def submit(n, name):
+    return f"Submitted: {name}"  # Only runs on button click!
 ```
 
 #### 2.4.3 Callback Graph and Execution Order
 
-Dash automatically builds a **dependency graph** from all callbacks:
+> 💡 **Tips:** Dash automatically figures out the order to run callbacks. If Callback A updates something that Callback B depends on, Dash runs A first, then B. This is called a "dependency graph."
+
+**Example: The Chain Reaction in PyFigureEditor**
+
+When you click "Apply" after changing a color:
 
 ```
-User clicks "Apply" button
+Step 1: User clicks "Apply Properties" button
         │
         ▼
-┌─────────────────────────────────┐
-│  Callback: apply_property_changes │
-│  Inputs: btn-apply-props.n_clicks │
-│  Outputs: main-graph.figure       │
-└─────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│  CALLBACK: apply_property_changes                        │
+│  ─────────────────────────────────────────────────────  │
+│  Input: btn-apply-props.n_clicks (button was clicked)   │
+│  State: color-input.value, size-input.value, etc.       │
+│  Output: main-graph.figure (the chart)                  │
+│                                                          │
+│  Action: Read new color → Update fig.data[0].color      │
+│          → Return modified figure                        │
+└─────────────────────────────────────────────────────────┘
         │
-        ▼ (figure changed)
-┌─────────────────────────────────┐
-│  Callback: update_element_options │
-│  Inputs: main-graph.figure        │
-│  Outputs: dd-element-select.options│
-└─────────────────────────────────┘
+        │ (figure was updated, triggers next callback!)
+        ▼
+┌─────────────────────────────────────────────────────────┐
+│  CALLBACK: update_element_options                        │
+│  ─────────────────────────────────────────────────────  │
+│  Input: main-graph.figure (figure changed!)             │
+│  Output: dd-element-select.options (dropdown items)     │
+│                                                          │
+│  Action: Read all traces from new figure                │
+│          → Generate dropdown options                     │
+│          → Return ["Trace 0", "Trace 1", ...]           │
+└─────────────────────────────────────────────────────────┘
         │
-        ▼ (options changed)
-┌─────────────────────────────────┐
-│  Callback: update_inspector_controls│
-│  Inputs: dd-element-select.value   │
-│  Outputs: inspector-controls.children│
-└─────────────────────────────────┘
+        │ (dropdown options changed, triggers next!)
+        ▼
+┌─────────────────────────────────────────────────────────┐
+│  CALLBACK: update_inspector_controls                     │
+│  ─────────────────────────────────────────────────────  │
+│  Input: dd-element-select.value (selected item)         │
+│  State: main-graph.figure                               │
+│  Output: inspector-controls.children (property panel)   │
+│                                                          │
+│  Action: Read selected trace's properties               │
+│          → Generate color/size/name input fields        │
+│          → Return the property editor UI                │
+└─────────────────────────────────────────────────────────┘
+        │
+        ▼
+     DONE! ✅
+     (User sees updated chart with new inspector values)
 ```
 
-This automatic chaining is fundamental to how PyFigureEditor maintains consistency between the figure and the property inspector.
+**This automatic chaining is fundamental to PyFigureEditor:**
+- User changes ONE thing (color)
+- System automatically updates EVERYTHING related (chart, dropdown, inspector)
+- No manual coordination needed!
 
-#### 2.4.4 Handling Multiple Outputs
+#### 2.4.4 Handling Multiple Outputs: The `allow_duplicate` Pattern
 
-Dash 2.x introduced `allow_duplicate=True`, enabling multiple callbacks to write to the same output:
+> 💡 **Tips:** By default, Dash says "only ONE callback can update each output." But in our app, MANY things update the chart! We use `allow_duplicate=True` to allow this.
+
+**The Problem:**
 
 ```python
-# Callback 1: Apply properties
-@app.callback(
-    Output("main-graph", "figure", allow_duplicate=True),
-    Input("btn-apply-props", "n_clicks"),
-    ...
-)
+# Callback 1: Property editor updates the chart
+@app.callback(Output("main-graph", "figure"), Input("btn-apply", "n_clicks"))
+def apply_properties(...): 
+    return updated_fig
 
-# Callback 2: Drawing tools
-@app.callback(
-    Output("main-graph", "figure", allow_duplicate=True),
-    Input("btn-draw-line", "n_clicks"),
-    ...
-)
+# Callback 2: Drawing tool updates the chart
+@app.callback(Output("main-graph", "figure"), Input("btn-draw-rect", "n_clicks"))
+def draw_rectangle(...):
+    return updated_fig
 
-# Callback 3: Undo/Redo
-@app.callback(
-    Output("main-graph", "figure", allow_duplicate=True),
-    Input("btn-undo", "n_clicks"),
-    ...
-)
+# Callback 3: Undo updates the chart
+@app.callback(Output("main-graph", "figure"), Input("btn-undo", "n_clicks"))
+def undo(...):
+    return previous_fig
+
+# ❌ ERROR! Dash says: "Multiple callbacks update main-graph.figure!"
 ```
 
-This pattern is essential for PyFigureEditor, where many different user actions can modify the same figure.
+**The Solution: `allow_duplicate=True`**
+
+```python
+# Callback 1: Property editor updates the chart
+@app.callback(
+    Output("main-graph", "figure", allow_duplicate=True),  # ← Allow duplicate!
+    Input("btn-apply", "n_clicks"),
+    prevent_initial_call=True
+)
+def apply_properties(...): 
+    return updated_fig
+
+# Callback 2: Drawing tool updates the chart
+@app.callback(
+    Output("main-graph", "figure", allow_duplicate=True),  # ← Same output allowed!
+    Input("btn-draw-rect", "n_clicks"),
+    prevent_initial_call=True
+)
+def draw_rectangle(...):
+    return updated_fig
+
+# Callback 3: Undo updates the chart
+@app.callback(
+    Output("main-graph", "figure", allow_duplicate=True),  # ← Also allowed!
+    Input("btn-undo", "n_clicks"),
+    prevent_initial_call=True
+)
+def undo(...):
+    return previous_fig
+
+# ✅ SUCCESS! All three can update the same chart
+```
+
+**This pattern is used throughout PyFigureEditor:**
+
+```python
+# In app.py, we have 10+ callbacks that all update main-graph.figure:
+# - Plot creation callbacks (scatter, bar, line, etc.)
+# - Property editing callbacks
+# - Drawing tool callbacks
+# - Annotation callbacks
+# - Undo/Redo callbacks
+# - Session load callbacks
+# - Theme change callbacks
+# All using allow_duplicate=True!
+```
 
 ---
 
 ## 3. System Architecture and Design
 
+> 💡 **Tips:** This chapter is like the "blueprint" of a building. Before constructing anything, architects draw detailed plans showing how everything fits together. This section explains HOW PyFigureEditor is organized internally.
+
 This chapter presents the architectural blueprint of PyFigureEditor, explaining how different components interact to create a cohesive, maintainable, and extensible system.
 
 ### 3.1 High-Level System Architecture
 
+> 💡 **Tips:** Software architecture is often organized in "layers," like a cake. Each layer has a specific job, and they communicate only with adjacent layers. This makes the code easier to understand, test, and modify.
+
 PyFigureEditor follows a **layered architecture** pattern that separates concerns and promotes modularity:
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                     PRESENTATION LAYER                               │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │
-│  │   Toolbar   │  │   Graph     │  │  Property   │  │   Modal     │ │
-│  │   Panel     │  │   Display   │  │  Inspector  │  │   Dialogs   │ │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘ │
-└─────────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                     CALLBACK LAYER (Controller)                      │
-│  ┌──────────────────────────────────────────────────────────────┐   │
-│  │  25+ Callback Functions Handling User Interactions            │   │
-│  │  • Figure creation/modification  • Property updates           │   │
-│  │  • Element selection            • Drawing operations          │   │
-│  │  • Undo/Redo                    • Session management         │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                     BUSINESS LOGIC LAYER (Model)                     │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │
-│  │ FigureStore │  │HistoryStack │  │TraceDataset │  │CodeGenerator│ │
-│  │   Class     │  │    Class    │  │    Class    │  │    Class    │ │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘ │
-└─────────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                     DATA LAYER                                       │
-│  ┌─────────────────────────────────────────────────────────────────┐│
-│  │  Plotly Figure Dictionary  │  JSON Session Storage             ││
-│  │  {data: [...], layout: {...}}  │  {figure, datasets, code}     ││
-│  └─────────────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          PRESENTATION LAYER                                  │
+│          (What the User Sees - HTML/CSS/JavaScript via Dash)                │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
+│  │   Ribbon    │  │   Graph     │  │  Property   │  │   Modal Dialogs     │ │
+│  │   Toolbar   │  │   Display   │  │  Inspector  │  │ (Save, About, etc.) │ │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────────────┘ │
+│                                                                              │
+│  Components: dbc.Tabs, dcc.Graph, dbc.Card, dbc.Modal, html.Div, etc.       │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │ User clicks button
+                                       │ or changes input
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      CALLBACK LAYER (Controller)                             │
+│              (The "Brain" - Responds to User Actions)                        │
+│  ┌──────────────────────────────────────────────────────────────────────┐   │
+│  │  20+ Callback Functions, each handling specific interactions:         │   │
+│  │                                                                        │   │
+│  │  @app.callback(Output(...), Input(...))                               │   │
+│  │  def handle_user_action(...):                                         │   │
+│  │      # Process input → Update state → Return new output               │   │
+│  │                                                                        │   │
+│  │  Examples:                                                             │   │
+│  │  • apply_property_changes()  - When user clicks "Apply"               │   │
+│  │  • generate_and_trigger_plot() - When user clicks a chart button      │   │
+│  │  • handle_undo_redo()        - When user clicks Undo/Redo             │   │
+│  │  • update_inspector_controls() - When selected element changes        │   │
+│  └──────────────────────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │ Callbacks use these classes
+                                       │ to manage data
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     BUSINESS LOGIC LAYER (Model)                             │
+│              (The "Data Experts" - Python Classes)                           │
+│                                                                              │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
+│  │ FigureStore │  │HistoryStack │  │TraceDataset │  │   CodeGenerator     │ │
+│  │             │  │             │  │             │  │                     │ │
+│  │ Manages the │  │ Undo/Redo   │  │ Holds data  │  │ Creates Python      │ │
+│  │ Plotly      │  │ history     │  │ for each    │  │ code from the       │ │
+│  │ figure      │  │ (50 states) │  │ trace       │  │ current figure      │ │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────────────┘ │
+│                                                                              │
+│  Location in app.py: Lines 210-817                                          │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │ Classes operate on this data
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          DATA LAYER                                          │
+│              (The Actual Data Being Stored)                                  │
+│                                                                              │
+│  ┌─────────────────────────────────┐  ┌─────────────────────────────────┐   │
+│  │     Plotly Figure Dictionary    │  │     Session JSON File           │   │
+│  │                                 │  │                                 │   │
+│  │  {                              │  │  {                              │   │
+│  │    "data": [                    │  │    "metadata": {...},           │   │
+│  │      {type, x, y, marker...}    │  │    "figure": {...},             │   │
+│  │    ],                           │  │    "datasets": {...},           │   │
+│  │    "layout": {                  │  │    "dataset_order": [...]       │   │
+│  │      title, xaxis, shapes...    │  │  }                              │   │
+│  │    }                            │  │                                 │   │
+│  │  }                              │  │  Saved to: session.json         │   │
+│  └─────────────────────────────────┘  └─────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+**Why Layered Architecture?**
+
+| Benefit | Explanation | Example |
+|---------|-------------|---------|
+| **Separation of Concerns** | Each layer does ONE thing well | UI layer doesn't know how to save files |
+| **Easier Testing** | Test each layer independently | Test `HistoryStack` without running the UI |
+| **Easier Maintenance** | Change one layer without breaking others | Update UI colors without touching data logic |
+| **Reusability** | Classes can be reused elsewhere | `CodeGenerator` could work in any Plotly app |
 
 ### 3.2 Core Class Design
 
+> 💡 **Tips:** Classes are like "blueprints" for creating objects. Each class in PyFigureEditor has ONE specific job (this is called the "Single Responsibility Principle"). Let's examine each one.
+
 The business logic is encapsulated in four primary classes, each with a single responsibility.
 
-#### 3.2.1 FigureStore Class
+#### 3.2.1 FigureStore Class — The Central Hub
 
-**Purpose:** Centralized management of the Plotly figure state.
+**Purpose:** Centralized management of the Plotly figure state. This is the MOST IMPORTANT class — everything revolves around it.
 
-**Design Pattern:** Facade Pattern - provides a simplified interface to the complex Plotly figure structure.
+**Design Pattern:** Facade Pattern — provides a simplified interface to the complex Plotly figure structure.
+
+**Think of it like:** A museum curator who manages all the artwork (traces, annotations, shapes) in an exhibition (the figure).
+
+**Location in app.py:** Lines 240-520
+
+**Actual Code from app.py:**
 
 ```python
 class FigureStore:
-    """
-    Central store for managing the Plotly figure and its elements.
+    """Owns the current Plotly figure and its logical datasets."""
+
+    def __init__(self, theme: str = "plotly_white") -> None:
+        self.current_theme: str = theme
+        self.figure: Optional[go.Figure] = None
+        self.datasets: Dict[str, TraceDataset] = {}      # Stores trace data
+        self.dataset_order: List[str] = []               # Order of traces
+        self.data_repository: Dict[str, pd.DataFrame] = {}  # Uploaded DataFrames
+        self.metadata: Dict[str, Any] = {
+            "created_at": datetime.now().isoformat(timespec="seconds"),
+            "updated_at": None,
+            "version": "1.0.0",
+        }
+        self._init_default_figure()  # Create initial demo figure
+```
+
+**Key Methods Explained:**
+
+| Method | What It Does | When It's Called | Code Location |
+|--------|--------------|------------------|---------------|
+| `get_figure_dict()` | Returns the figure as a dictionary | When callbacks need current state | Line 350 |
+| `update_figure(fig)` | Replaces the entire figure | After any modification | Line 355 |
+| `add_dataset(key, name, df, ...)` | Adds a new trace with data | When user creates a chart | Line 360 |
+| `remove_trace(index)` | Deletes a trace by index | When user clicks Delete | Line 405 |
+| `remove_annotation(index)` | Deletes an annotation | When user deletes text | Line 420 |
+| `remove_shape(index)` | Deletes a shape | When user deletes a rectangle | Line 435 |
+| `serialize_session()` | Converts everything to JSON | When user clicks Save Session | Line 480 |
+| `load_session(payload)` | Restores from JSON | When user loads a session | Line 500 |
+
+**Detailed Code Analysis — `serialize_session()`:**
+
+```python
+def serialize_session(self) -> Dict[str, Any]:
+    """Return a JSON-serializable snapshot of the current session.
     
-    Responsibilities:
-    - Create and manage the main figure
-    - Add/remove/update traces (data series)
-    - Add/remove/update annotations (text labels)
-    - Add/remove/update shapes (rectangles, circles, lines)
-    - Add/remove/update images (background images)
-    - Maintain consistency between visual elements and data
+    This method is called when the user clicks "Save Session".
+    It creates a complete backup that can be saved to a file
+    and loaded later to restore the exact state.
     """
     
-    def __init__(self):
-        self._figure = go.Figure()
-        self._trace_counter = 0
-        self._annotation_counter = 0
-        self._shape_counter = 0
-        self._image_counter = 0
+    # Step 1: Package all datasets
+    datasets_payload: Dict[str, Any] = {}
+    for key, ds in self.datasets.items():
+        datasets_payload[key] = {
+            "name": ds.name,
+            "color": ds.color,
+            "line_width": ds.line_width,
+            "marker_size": ds.marker_size,
+            "visible": ds.visible,
+            "chart_type": ds.chart_type,
+            "df": ds.df.to_dict(orient="list"),  # Convert DataFrame to dict
+        }
+
+    # Step 2: Build the complete session object
+    return {
+        "metadata": copy.deepcopy(self.metadata),
+        "current_theme": self.current_theme,
+        "datasets": datasets_payload,
+        "dataset_order": list(self.dataset_order),
+        "figure": self.figure.to_dict() if self.figure is not None else None,
+        "version": "1.0.0",
+    }
 ```
 
-**Key Methods:**
-
-| Method | Purpose | Complexity |
-|--------|---------|------------|
-| `get_figure()` | Return current figure | O(1) |
-| `set_figure(fig)` | Replace entire figure | O(1) |
-| `add_trace(trace_type, dataset)` | Add new data series | O(n) |
-| `update_trace(index, properties)` | Modify trace properties | O(1) |
-| `remove_trace(index)` | Delete a trace | O(n) |
-| `add_annotation(text, position)` | Add text annotation | O(1) |
-| `update_annotation(index, props)` | Modify annotation | O(1) |
-| `remove_annotation(index)` | Delete annotation | O(n) |
-| `add_shape(shape_type, coords)` | Add shape | O(1) |
-| `remove_shape(index)` | Delete shape | O(n) |
-| `add_image(source, position)` | Add background image | O(1) |
-| `remove_image(index)` | Delete image | O(n) |
-
-**State Diagram:**
+**State Diagram — How FigureStore Changes Over Time:**
 
 ```
-                    ┌─────────────┐
-                    │    EMPTY    │
-                    │   Figure    │
-                    └──────┬──────┘
-                           │ add_trace()
-                           ▼
-                    ┌─────────────┐
-          ┌────────│   BASIC     │────────┐
-          │        │   Figure    │        │
-          │        └──────┬──────┘        │
-          │               │               │
-add_annotation()    update_*()      add_shape()
-          │               │               │
-          ▼               ▼               ▼
-    ┌───────────┐  ┌───────────┐  ┌───────────┐
-    │ ANNOTATED │  │  UPDATED  │  │  WITH     │
-    │  Figure   │  │  Figure   │  │  SHAPES   │
-    └───────────┘  └───────────┘  └───────────┘
-          │               │               │
-          └───────────────┼───────────────┘
-                          │
-                          ▼
-                   ┌─────────────┐
-                   │   COMPLEX   │
-                   │   Figure    │
-                   └─────────────┘
+                    ┌─────────────────┐
+                    │  INITIALIZED    │
+                    │  (Demo figure)  │
+                    └────────┬────────┘
+                             │ User loads data / creates chart
+                             ▼
+                    ┌─────────────────┐
+          ┌────────│  HAS TRACES     │────────┐
+          │        │  (Working state)│        │
+          │        └────────┬────────┘        │
+          │                 │                 │
+    add_annotation()   update_*()        add_shape()
+          │                 │                 │
+          ▼                 ▼                 ▼
+    ┌───────────┐    ┌───────────┐    ┌───────────┐
+    │   WITH    │    │  MODIFIED │    │   WITH    │
+    │ANNOTATIONS│    │   PROPS   │    │  SHAPES   │
+    └───────────┘    └───────────┘    └───────────┘
+          │                 │                 │
+          └─────────────────┼─────────────────┘
+                            │
+                            ▼
+                   ┌─────────────────┐
+                   │    COMPLEX      │
+                   │ (Full editing)  │
+                   └─────────────────┘
+                            │
+              ┌─────────────┴─────────────┐
+              │                           │
+       serialize_session()          load_session()
+              │                           │
+              ▼                           ▼
+       ┌─────────────┐            ┌─────────────┐
+       │ JSON FILE   │───────────>│  RESTORED   │
+       │  (saved)    │            │   STATE     │
+       └─────────────┘            └─────────────┘
 ```
 
-#### 3.2.2 HistoryStack Class
+#### 3.2.2 HistoryStack Class — The Time Machine
 
-**Purpose:** Implement undo/redo functionality using the Memento design pattern.
+**Purpose:** Implement undo/redo functionality. Every time you make a change, the previous state is saved. You can go back in time!
 
-**Design Pattern:** Memento Pattern - captures and stores the internal state of an object so it can be restored later.
+**Design Pattern:** Memento Pattern — captures and stores the internal state of an object so it can be restored later.
+
+**Think of it like:** A "Time Machine" that remembers the last 50 versions of your chart.
+
+**Location in app.py:** Lines 525-600
+
+**Actual Code from app.py:**
 
 ```python
 class HistoryStack:
-    """
-    Manages undo/redo history using a stack-based approach.
-    
-    Implementation Details:
-    - Maintains two stacks: undo_stack and redo_stack
-    - Each entry is a deep copy of the entire figure state
-    - Maximum history depth configurable (default: 50)
-    - Clear redo stack on new action (standard behavior)
-    """
-    
-    def __init__(self, max_size: int = 50):
-        self._undo_stack: List[Dict] = []
-        self._redo_stack: List[Dict] = []
-        self._max_size = max_size
+    """Classic undo/redo stack for figure dictionaries."""
+
+    def __init__(self, max_size: int = 50) -> None:
+        self.max_size = max_size
+        self.undo_stack: List[Dict[str, Any]] = []  # Past states
+        self.redo_stack: List[Dict[str, Any]] = []  # Future states (after undo)
+
+    def push(self, fig_dict: Optional[Dict[str, Any]]) -> None:
+        """Save current state before making a change."""
+        if fig_dict is None:
+            return
+        snapshot = copy.deepcopy(fig_dict)  # IMPORTANT: Deep copy!
+        
+        # Avoid duplicate consecutive states
+        if self.undo_stack:
+            last_state = json.dumps(self.undo_stack[-1], sort_keys=True, default=str)
+            new_state = json.dumps(snapshot, sort_keys=True, default=str)
+            if last_state == new_state:
+                return  # Same state, don't save again
+                
+        self.undo_stack.append(snapshot)
+        
+        # Limit memory usage
+        if len(self.undo_stack) > self.max_size:
+            self.undo_stack.pop(0)  # Remove oldest
+            
+        self.redo_stack.clear()  # New action clears redo history
+
+    def can_undo(self) -> bool:
+        return len(self.undo_stack) > 1  # Need at least 2 states
+
+    def can_redo(self) -> bool:
+        return bool(self.redo_stack)
+
+    def undo(self) -> Optional[Dict[str, Any]]:
+        """Go back one step."""
+        if not self.can_undo():
+            return None
+        current = self.undo_stack.pop()      # Remove current state
+        self.redo_stack.append(current)      # Save it for redo
+        return copy.deepcopy(self.undo_stack[-1])  # Return previous state
+
+    def redo(self) -> Optional[Dict[str, Any]]:
+        """Go forward one step (after undo)."""
+        if not self.redo_stack:
+            return None
+        state = self.redo_stack.pop()
+        self.undo_stack.append(copy.deepcopy(state))
+        return copy.deepcopy(state)
 ```
 
-**Operation Flow:**
+**Visual Explanation — How Undo/Redo Works:**
 
 ```
-User Action                    Stack State
-───────────                    ───────────
-Initial                        Undo: []          Redo: []
+SCENARIO: User creates chart, changes color, adds annotation, then wants to undo twice.
 
-Create figure                  Undo: [S0]        Redo: []
+STEP 1: Initial state (empty)
+┌─────────────────┐     ┌─────────────────┐
+│   UNDO STACK    │     │   REDO STACK    │
+│   (empty)       │     │   (empty)       │
+└─────────────────┘     └─────────────────┘
 
-Add trace                      Undo: [S0, S1]    Redo: []
+STEP 2: User creates scatter chart → push(state)
+┌─────────────────┐     ┌─────────────────┐
+│   UNDO STACK    │     │   REDO STACK    │
+│   [S0: scatter] │     │   (empty)       │
+└─────────────────┘     └─────────────────┘
 
-Change color                   Undo: [S0,S1,S2]  Redo: []
+STEP 3: User changes color to red → push(state)
+┌─────────────────┐     ┌─────────────────┐
+│   UNDO STACK    │     │   REDO STACK    │
+│   [S0: scatter] │     │   (empty)       │
+│   [S1: red]     │     │                 │
+└─────────────────┘     └─────────────────┘
 
-Click UNDO                     Undo: [S0, S1]    Redo: [S2]
-  → Restore S1
+STEP 4: User adds annotation → push(state)
+┌─────────────────┐     ┌─────────────────┐
+│   UNDO STACK    │     │   REDO STACK    │
+│   [S0: scatter] │     │   (empty)       │
+│   [S1: red]     │     │                 │
+│   [S2: +annot]  │     │                 │
+└─────────────────┘     └─────────────────┘
 
-Click UNDO                     Undo: [S0]        Redo: [S2, S1]
-  → Restore S0
+STEP 5: User clicks UNDO → undo()
+┌─────────────────┐     ┌─────────────────┐
+│   UNDO STACK    │     │   REDO STACK    │
+│   [S0: scatter] │     │   [S2: +annot]  │  ← S2 moved here
+│   [S1: red]     │     │                 │
+└─────────────────┘     └─────────────────┘
+Result: Chart shows S1 (red, no annotation)
 
-Click REDO                     Undo: [S0, S1]    Redo: [S2]
-  → Restore S1
+STEP 6: User clicks UNDO again → undo()
+┌─────────────────┐     ┌─────────────────┐
+│   UNDO STACK    │     │   REDO STACK    │
+│   [S0: scatter] │     │   [S2: +annot]  │
+│                 │     │   [S1: red]     │  ← S1 moved here
+└─────────────────┘     └─────────────────┘
+Result: Chart shows S0 (original blue scatter)
 
-New action (add shape)         Undo: [S0,S1,S3]  Redo: []  ← Cleared!
+STEP 7: User clicks REDO → redo()
+┌─────────────────┐     ┌─────────────────┐
+│   UNDO STACK    │     │   REDO STACK    │
+│   [S0: scatter] │     │   [S2: +annot]  │
+│   [S1: red]     │ ←   │                 │  ← S1 moved back
+└─────────────────┘     └─────────────────┘
+Result: Chart shows S1 (red)
+
+STEP 8: User makes NEW change (adds shape) → push(state)
+┌─────────────────┐     ┌─────────────────┐
+│   UNDO STACK    │     │   REDO STACK    │
+│   [S0: scatter] │     │   (CLEARED!)    │  ← Redo stack cleared!
+│   [S1: red]     │     │                 │
+│   [S3: +shape]  │     │                 │
+└─────────────────┘     └─────────────────┘
+Note: S2 is LOST forever — this is standard undo/redo behavior!
 ```
 
-**Memory Optimization:**
-
-Since storing complete figure states can be memory-intensive, the implementation includes optimizations:
-
-1. **Shallow Copy Where Safe:** Layout properties that rarely change
-2. **Deep Copy for Data:** Trace data and modifications
-3. **Pruning Strategy:** Remove oldest states when limit exceeded
-
-#### 3.2.3 TraceDataset Class
-
-**Purpose:** Encapsulate data parsing and validation logic for different input formats.
-
-**Design Pattern:** Strategy Pattern - allows the algorithm for data parsing to vary based on input format.
+**Why Deep Copy is Critical:**
 
 ```python
-class TraceDataset:
-    """
-    Handles data input, parsing, and validation for plot traces.
-    
-    Supported Input Formats:
-    - Direct Python lists/arrays
-    - NumPy arrays
-    - Pandas DataFrames (column selection)
-    - CSV-style comma-separated values
-    - JSON data import
-    
-    Validation Rules:
-    - X and Y must have same length
-    - Numeric values only for most trace types
-    - String values allowed for categorical axes
-    """
-    
-    @staticmethod
-    def parse_input(text_input: str, input_type: str) -> Tuple[List, List, Optional[List]]:
-        """
-        Parse user input into x, y, (optional z) data arrays.
-        
-        Args:
-            text_input: Raw text from input field
-            input_type: One of 'xy_pairs', 'separate_xy', 'csv_columns', 'function'
-            
-        Returns:
-            Tuple of (x_data, y_data, z_data or None)
-        """
+# BAD: Without deep copy
+self.undo_stack.append(fig_dict)
+# Problem: fig_dict is a reference! If the figure changes, 
+# the "saved" state changes too — your history is corrupted!
+
+# GOOD: With deep copy
+self.undo_stack.append(copy.deepcopy(fig_dict))
+# Now we have an independent copy that won't change
 ```
 
-**Input Format Examples:**
+#### 3.2.3 TraceDataset Class — The Data Container
 
-| Format | Input Example | Parsed Result |
-|--------|---------------|---------------|
-| XY Pairs | `(1,2), (3,4), (5,6)` | x=[1,3,5], y=[2,4,6] |
-| Separate XY | `x: 1,2,3 y: 4,5,6` | x=[1,2,3], y=[4,5,6] |
-| CSV Columns | `1,4\n2,5\n3,6` | x=[1,2,3], y=[4,5,6] |
-| Function | `x=linspace(0,10,50)` | Generated array |
+**Purpose:** Encapsulate data and styling for a single trace (data series). Think of it as a "package" containing everything needed to draw one line/bar/scatter.
 
-#### 3.2.4 CodeGenerator Class
+**Design Pattern:** Data Transfer Object (DTO) — a simple container for related data.
 
-**Purpose:** Generate reproducible Python code from the current figure state.
+**Think of it like:** A labeled box containing all the information for one item on your chart.
 
-**Design Pattern:** Template Method Pattern - defines the skeleton of code generation algorithm.
+**Location in app.py:** Lines 180-240
+
+**Actual Code from app.py:**
+
+```python
+@dataclass
+class TraceDataset:
+    """Container for a single logical plot layer."""
+    
+    key: str                    # Unique identifier (e.g., "trace_1")
+    name: str                   # Display name (e.g., "Sales Data")
+    df: pd.DataFrame            # The actual data (x, y columns)
+    color: str = "#1f77b4"      # Default blue
+    line_width: float = 2.5     # Line thickness
+    marker_size: float = 6.0    # Point size
+    visible: bool = True        # Show or hide
+    chart_type: str = "scatter" # scatter, bar, line, etc.
+
+    def to_plotly_trace(self):
+        """Convert this dataset into a Plotly trace object."""
+        
+        # Get x and y data from DataFrame
+        x = self.df['x'] if 'x' in self.df.columns else None
+        y = self.df['y'] if 'y' in self.df.columns else None
+        
+        # Create appropriate trace type
+        if self.chart_type == "bar":
+            trace = go.Bar(x=x, y=y, name=self.name)
+        elif self.chart_type == "pie":
+            trace = go.Pie(labels=x, values=y, name=self.name)
+        elif self.chart_type == "histogram":
+            trace = go.Histogram(x=y, name=self.name)
+        elif self.chart_type == "box":
+            trace = go.Box(y=y, name=self.name)
+        else:  # default scatter
+            trace = go.Scatter(
+                x=x, y=y,
+                mode="lines+markers",
+                name=self.name,
+            )
+
+        # Apply styling
+        if hasattr(trace, "marker"):
+            trace.update(marker=dict(size=self.marker_size, color=self.color))
+        if hasattr(trace, "line"):
+            trace.update(line=dict(width=self.line_width, color=self.color))
+        
+        trace.visible = True if self.visible else "legendonly"
+        return trace
+```
+
+**Example Usage:**
+
+```python
+# Create a dataset
+dataset = TraceDataset(
+    key="sales_2024",
+    name="Sales 2024",
+    df=pd.DataFrame({"x": [1,2,3,4], "y": [100,150,120,180]}),
+    color="#ff6b6b",
+    line_width=3,
+    marker_size=10,
+    chart_type="scatter"
+)
+
+# Convert to Plotly trace
+trace = dataset.to_plotly_trace()
+# Now trace is a go.Scatter object ready to add to a figure!
+```
+
+#### 3.2.4 CodeGenerator Class — The Code Writer
+
+**Purpose:** Generate Python code that recreates the current figure. This is the "magic" that lets users export their work as reproducible code.
+
+**Design Pattern:** Template Method Pattern — defines the skeleton of code generation.
+
+**Think of it like:** A robot that watches you edit a chart and writes down the Python code to recreate it.
+
+**Location in app.py:** Lines 640-800
+
+**Actual Code from app.py:**
 
 ```python
 class CodeGenerator:
+    """Turn the current figure into runnable Python code."""
+
+    def generate_code(self, store: FigureStore) -> str:
+        """Generate complete Python code to recreate the figure."""
+        
+        if store.figure is None:
+            return "# No figure available yet. Interact with the editor first."
+
+        # Get the complete JSON representation
+        fig_json = store.figure.to_json()
+
+        # Build the code
+        lines: List[str] = []
+        lines.append("# Auto-generated by Python Interactive Figure Editor")
+        lines.append("# Recreate the current figure exactly as seen in the UI.")
+        lines.append("import json")
+        lines.append("import plotly.graph_objects as go")
+        lines.append("")
+        lines.append(f"fig_dict = json.loads({fig_json!r})")
+        lines.append("fig = go.Figure(fig_dict)")
+        lines.append("")
+        lines.append("# Show the figure")
+        lines.append("fig.show()")
+        lines.append("")
+        lines.append("# Tip: you can now modify `fig` programmatically, e.g.:")
+        lines.append("# fig.update_layout(title='My Edited Figure')")
+        
+        return "\n".join(lines)
+```
+
+**Smart Plot Code Generation:**
+
+The `CodeGenerator` also has a `generate_smart_plot_code()` method that generates cleaner code based on the data:
+
+```python
+def generate_smart_plot_code(self, df_name: str, plot_type: str, df: pd.DataFrame) -> str:
+    """Generate Plotly code with smart column selection.
+    
+    This method analyzes the DataFrame to pick appropriate columns:
+    - Numeric columns for x, y, z, size
+    - Categorical columns for color, grouping
     """
-    Generates Python/Plotly code that recreates the current figure.
     
-    Output Formats:
-    - Plotly Express (high-level, concise)
-    - Plotly Graph Objects (detailed, explicit)
-    - Matplotlib (for users preferring static output)
+    # Analyze DataFrame columns
+    num_cols = df.select_dtypes(include=np.number).columns.tolist()
+    cat_cols = df.select_dtypes(exclude=np.number).columns.tolist()
     
-    Code Quality:
-    - Properly formatted (PEP 8 compliant)
-    - Commented for readability
-    - Executable without modification
-    """
+    # Smart column selection based on plot type
+    if plot_type == 'scatter':
+        x_col = num_cols[0] if num_cols else df.columns[0]
+        y_col = num_cols[1] if len(num_cols) > 1 else num_cols[0]
+        color_col = cat_cols[0] if cat_cols else None
+        
+        code = f"fig = px.scatter({df_name}, x='{x_col}', y='{y_col}'"
+        if color_col:
+            code += f", color='{color_col}'"
+        code += ")"
+        
+    elif plot_type == 'bar':
+        # Use category for x, numeric for y
+        x_col = cat_cols[0] if cat_cols else df.columns[0]
+        y_col = num_cols[0] if num_cols else df.columns[1]
+        code = f"fig = px.bar({df_name}, x='{x_col}', y='{y_col}')"
+        
+    # ... more plot types ...
     
-    def generate(self, figure: go.Figure, style: str = 'graph_objects') -> str:
-        """Generate Python code for the figure."""
+    return code
 ```
 
 **Generated Code Example:**
 
-```python
-# Auto-generated by PyFigureEditor
-# Date: 2024-12-01
+When you create a scatter plot, change the color to red, and add an annotation, the generated code looks like:
 
+```python
+# Auto-generated by Python Interactive Figure Editor
+import json
 import plotly.graph_objects as go
 
-fig = go.Figure()
+fig_dict = json.loads('{"data":[{"type":"scatter","x":[1,2,3,4,5],"y":[2,4,1,5,3],"mode":"lines+markers","name":"My Data","marker":{"color":"red","size":10},"line":{"color":"red","width":2}}],"layout":{"title":{"text":"My Chart"},"annotations":[{"text":"Important Point","x":3,"y":5,"showarrow":true}],"template":"plotly_white"}}')
 
-# Add scatter trace
-fig.add_trace(go.Scatter(
-    x=[1, 2, 3, 4, 5],
-    y=[2, 4, 1, 5, 3],
-    mode='lines+markers',
-    name='Series 1',
-    line=dict(color='#1f77b4', width=2),
-    marker=dict(size=8, symbol='circle')
-))
+fig = go.Figure(fig_dict)
 
-# Update layout
-fig.update_layout(
-    title=dict(text='My Figure'),
-    xaxis=dict(title=dict(text='X Axis')),
-    yaxis=dict(title=dict(text='Y Axis')),
-    template='plotly_white'
-)
-
+# Show the figure
 fig.show()
+
+# Tip: you can now modify `fig` programmatically, e.g.:
+# fig.update_layout(title='My Edited Figure')
 ```
 
 ### 3.3 Component Interaction Diagram
 
-The following sequence diagram illustrates how components interact when a user changes a trace property:
+> 💡 **Tips:** This diagram shows what happens "behind the scenes" when you click a button. Each arrow represents a function call or data transfer.
+
+**Sequence Diagram: User Changes Trace Color**
 
 ```
-User          UI Layer        Callback Layer    FigureStore     HistoryStack
- │                │                │                │                │
- │  Click Apply   │                │                │                │
- │───────────────>│                │                │                │
- │                │  n_clicks +1   │                │                │
- │                │───────────────>│                │                │
- │                │                │  get_figure()  │                │
- │                │                │───────────────>│                │
- │                │                │<───────────────│                │
- │                │                │                │                │
- │                │                │  push(current) │                │
- │                │                │────────────────────────────────>│
- │                │                │<────────────────────────────────│
- │                │                │                │                │
- │                │                │ update_trace() │                │
- │                │                │───────────────>│                │
- │                │                │<───────────────│                │
- │                │                │                │                │
- │                │  new figure    │                │                │
- │                │<───────────────│                │                │
- │  Updated graph │                │                │                │
- │<───────────────│                │                │                │
+ USER          BROWSER         CALLBACK         FigureStore      HistoryStack
+  │               │               │                  │                │
+  │ Click "Apply" │               │                  │                │
+  │──────────────>│               │                  │                │
+  │               │  HTTP POST    │                  │                │
+  │               │──────────────>│                  │                │
+  │               │               │                  │                │
+  │               │               │  1. Get current figure           │
+  │               │               │─────────────────>│                │
+  │               │               │<─────────────────│                │
+  │               │               │                  │                │
+  │               │               │  2. Push to history (backup)     │
+  │               │               │─────────────────────────────────>│
+  │               │               │<─────────────────────────────────│
+  │               │               │                  │                │
+  │               │               │  3. Apply color change           │
+  │               │               │  fig.data[0].marker.color = "red"│
+  │               │               │                  │                │
+  │               │               │  4. Update figure                │
+  │               │               │─────────────────>│                │
+  │               │               │<─────────────────│                │
+  │               │               │                  │                │
+  │               │  JSON Response│                  │                │
+  │               │<──────────────│                  │                │
+  │ Updated Chart │               │                  │                │
+  │<──────────────│               │                  │                │
+  │               │               │                  │                │
+  
+TIME: ~50-100ms total (feels instant!)
 ```
 
 ### 3.4 Layout Architecture
 
-The visual layout follows a **responsive grid system** using Dash Bootstrap Components:
+> 💡 **Tips:** The visual layout uses a "grid system" where the screen is divided into rows and columns. This is the same concept used by Bootstrap CSS framework.
+
+**The PyFigureEditor Screen Layout:**
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        HEADER / TOOLBAR                              │
-│  [New] [Load] [Save] [Undo] [Redo] [Export PNG] [Export Code]       │
-│  Plot Type: [Dropdown ▼]   Template: [Dropdown ▼]                   │
-└─────────────────────────────────────────────────────────────────────┘
-┌────────────────────────────────────┬────────────────────────────────┐
-│                                    │                                │
-│                                    │      PROPERTY INSPECTOR        │
-│                                    │  ┌──────────────────────────┐  │
-│                                    │  │ Element: [Dropdown ▼]   │  │
-│        MAIN GRAPH AREA             │  ├──────────────────────────┤  │
-│                                    │  │ ● Title: [__________]   │  │
-│        (dcc.Graph)                 │  │ ● Color: [__________]   │  │
-│                                    │  │ ● Size:  [__________]   │  │
-│        Width: ~70%                 │  │ ● Style: [Dropdown ▼]   │  │
-│                                    │  │ ● ...                    │  │
-│                                    │  │                          │  │
-│                                    │  │ [Apply] [Reset] [Delete]│  │
-│                                    │  └──────────────────────────┘  │
-│                                    │                                │
-│                                    │      Width: ~30%              │
-├────────────────────────────────────┴────────────────────────────────┤
-│                        DATA INPUT PANEL                              │
-│  ┌──────────────────────────────────────────────────────────────┐   │
-│  │ Input Type: [Dropdown ▼]                                     │   │
-│  │ ┌────────────────────────────────────────────────────────┐   │   │
-│  │ │ Enter your data here...                                │   │   │
-│  │ │ (1, 2), (3, 4), (5, 6)                                 │   │   │
-│  │ └────────────────────────────────────────────────────────┘   │   │
-│  │ [Add to Plot]                                                │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────────────────┐
-│                        DRAWING TOOLBAR                               │
-│  Mode: [Select] [Zoom] [Pan] [Draw Line] [Draw Rect] [Draw Circle] │
-│  [Add Text] [Add Arrow] [Add Image]                                 │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              RIBBON TOOLBAR                                  │
+│  ┌─────────┬─────────┬─────────┬───────────┬─────────┐                      │
+│  │  HOME   │  DATA   │  PLOTS  │ ANNOTATE  │  VIEW   │     [GitHub Link]   │
+│  └─────────┴─────────┴─────────┴───────────┴─────────┘                      │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ Tab Content: Buttons change based on selected tab                   │    │
+│  │ HOME: [Open] [Save] [Undo] [Redo] [About]                          │    │
+│  │ DATA: [Import CSV] [Load Demo] [Select Data] [Clean] [Summary]     │    │
+│  │ PLOTS: [Scatter] [Line] [Bar] ... (26+ buttons)                    │    │
+│  │ ANNOTATE: [Line] [Rect] [Circle] [Text] [Image]                    │    │
+│  │ VIEW: [Zoom] [Pan] [Reset] [Inspector Toggle]                      │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+├─────────────────────────────────────────────┬───────────────────────────────┤
+│                                             │                               │
+│                                             │      PROPERTY INSPECTOR       │
+│                                             │  ┌─────────────────────────┐  │
+│                                             │  │ Element: [Dropdown ▼]  │  │
+│           MAIN GRAPH AREA                   │  ├─────────────────────────┤  │
+│                                             │  │                         │  │
+│           (dcc.Graph component)             │  │  Name:  [___________]  │  │
+│                                             │  │  Color: [___________]  │  │
+│           • Shows the Plotly chart          │  │  Size:  [___________]  │  │
+│           • Interactive (zoom, pan, hover)  │  │  Style: [Dropdown ▼]  │  │
+│           • Receives figure from callbacks  │  │  Opacity: [___________]│  │
+│                                             │  │                         │  │
+│           Width: ~70% of screen             │  │  [Apply] [Reset]       │  │
+│                                             │  │  [Delete Element]      │  │
+│                                             │  └─────────────────────────┘  │
+│                                             │                               │
+│                                             │      Width: ~30% of screen   │
+├─────────────────────────────────────────────┴───────────────────────────────┤
+│                           COMMAND WINDOW                                     │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ # Auto-generated code appears here                                   │    │
+│  │ fig = px.scatter(df, x='x', y='y')                                  │    │
+│  │ fig.update_traces(marker_color='red')                               │    │
+│  │                                                           [Copy] 📋  │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+RESPONSIVE DESIGN:
+- On wide screens (>1200px): Side-by-side layout as shown
+- On narrow screens (<768px): Inspector moves below graph
+```
+
+**Code Structure for Layout (Simplified):**
+
+```python
+app.layout = dbc.Container([
+    # Row 1: Ribbon
+    ribbon,  # The tab bar and buttons
+    
+    # Row 2: Main content (graph + inspector)
+    dbc.Row([
+        dbc.Col([
+            dcc.Graph(id="main-graph", figure=initial_figure, config={...})
+        ], lg=8, md=12),  # 8/12 columns on large, full on medium
+        
+        dbc.Col([
+            inspector_panel  # Property editor
+        ], lg=4, md=12),  # 4/12 columns on large, full on medium
+    ]),
+    
+    # Row 3: Command window
+    command_window,
+    
+    # Hidden components
+    dcc.Store(id="store-history", data={}),  # Hidden storage for undo history
+    
+    # Modals (pop-up dialogs)
+    about_modal,
+    save_modal,
+    # etc.
+    
+], fluid=True)
 ```
 
 ### 3.5 Data Flow Architecture
 
-Understanding how data flows through the system is crucial for debugging and extending the application:
+> 💡 **Tips:** This shows how data "flows" through the application — from user input to visual output. Understanding this flow is key to understanding how the app works.
+
+**Complete Data Flow Diagram:**
 
 ```
-                           USER INPUT
-                               │
-              ┌────────────────┼────────────────┐
-              │                │                │
-              ▼                ▼                ▼
-         Data Entry      Property Edit    Drawing Action
-              │                │                │
-              ▼                ▼                ▼
-    ┌─────────────────────────────────────────────────┐
-    │              INPUT VALIDATION                    │
-    │  • Data format checking                         │
-    │  • Type conversion                              │
-    │  • Range validation                             │
-    └─────────────────────────────────────────────────┘
-              │                │                │
-              ▼                ▼                ▼
-    ┌─────────────────────────────────────────────────┐
-    │              STATE UPDATE                        │
-    │  • FigureStore modification                     │
-    │  • History push                                 │
-    │  • Code regeneration                           │
-    └─────────────────────────────────────────────────┘
-                               │
-                               ▼
-    ┌─────────────────────────────────────────────────┐
-    │              UI REFRESH                          │
-    │  • Graph re-render                              │
-    │  • Inspector update                             │
-    │  • Element dropdown refresh                     │
-    └─────────────────────────────────────────────────┘
-                               │
-                               ▼
-                         VISUAL OUTPUT
+                              USER INPUT
+                                  │
+               ┌──────────────────┼──────────────────┐
+               │                  │                  │
+               ▼                  ▼                  ▼
+         CSV Upload         Button Click        Drawing Action
+         (file data)        (n_clicks)          (relayoutData)
+               │                  │                  │
+               ▼                  ▼                  ▼
+    ┌──────────────────────────────────────────────────────────┐
+    │                  INPUT VALIDATION                         │
+    │  ┌────────────────────────────────────────────────────┐  │
+    │  │ • Check file format (CSV, JSON)                    │  │
+    │  │ • Validate data types (numbers, strings)           │  │
+    │  │ • Check required columns exist                     │  │
+    │  │ • Convert to appropriate Python types              │  │
+    │  └────────────────────────────────────────────────────┘  │
+    │                                                          │
+    │  If invalid: Show error message, stop processing         │
+    └──────────────────────────────────────────────────────────┘
+                                  │
+                                  │ Valid data
+                                  ▼
+    ┌──────────────────────────────────────────────────────────┐
+    │                  STATE UPDATE                             │
+    │  ┌────────────────────────────────────────────────────┐  │
+    │  │ 1. history_stack.push(current_state)  # Backup     │  │
+    │  │ 2. figure_store.update_figure(new_fig) # Change    │  │
+    │  │ 3. code_generator.generate_code()     # Update code│  │
+    │  └────────────────────────────────────────────────────┘  │
+    └──────────────────────────────────────────────────────────┘
+                                  │
+                                  │ New figure state
+                                  ▼
+    ┌──────────────────────────────────────────────────────────┐
+    │                  UI REFRESH                               │
+    │  ┌────────────────────────────────────────────────────┐  │
+    │  │ Callback returns trigger AUTOMATIC updates:        │  │
+    │  │                                                    │  │
+    │  │ • main-graph.figure      → Chart re-renders        │  │
+    │  │ • dd-element.options     → Dropdown updates        │  │
+    │  │ • inspector.children     → Property panel updates  │  │
+    │  │ • btn-undo.disabled      → Undo button enables     │  │
+    │  │ • command-window.value   → Code updates            │  │
+    │  └────────────────────────────────────────────────────┘  │
+    └──────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+                           VISUAL OUTPUT
+                    (User sees updated chart!)
 ```
 
 ### 3.6 Design Decisions and Trade-offs
 
-Several key design decisions shaped the architecture:
+> 💡 **Tips:** Every engineering decision involves trade-offs. There's no "perfect" solution — only solutions that are better for specific situations. Here's why we made certain choices.
 
-| Decision | Rationale | Trade-off |
-|----------|-----------|-----------|
-| Single-page application | Simpler state management | Limited URL routing |
-| Figure state in callbacks | No external database needed | Limited scalability |
-| Full figure copy for undo | Simple implementation | Higher memory usage |
-| Client-side validation | Faster feedback | Duplicate validation logic |
-| No user authentication | Simplifies deployment | Single-user sessions |
-| JSON-based sessions | Human-readable, portable | Larger file sizes |
+| Decision | What We Chose | Why | Trade-off |
+|----------|---------------|-----|-----------|
+| **Architecture** | Single-page application (SPA) | Simpler state management, no page reloads | Limited URL routing (can't bookmark specific charts) |
+| **State Storage** | Store in callbacks (not database) | No database setup needed, works offline | Limited scalability (single user sessions) |
+| **Undo Implementation** | Full figure copy per state | Simple to implement, 100% reliable | Higher memory usage (~50 states × figure size) |
+| **Validation** | Client-side (in browser) | Faster user feedback, less server load | Need to duplicate some validation logic |
+| **Authentication** | None (single user) | Simplifies deployment, no login needed | Can't share sessions between users |
+| **Session Format** | JSON file | Human-readable, easy to debug, portable | Larger file size than binary formats |
+| **Deployment** | PythonAnywhere | Free tier available, Python-native | Limited customization compared to Docker |
+
+**Why These Trade-offs Make Sense for This Project:**
+
+1. **Educational Focus:** Simpler architecture is easier to understand and teach
+2. **Single-User Tool:** Like MATLAB's Figure Tool, designed for one person at a time
+3. **Portability:** JSON sessions can be shared via email or Git
+4. **Development Speed:** Avoiding complex infrastructure lets us focus on features
 
 ### 3.7 Extensibility Points
 
-The architecture includes several extension points for future development:
+> 💡 **Tips:** Good software is designed to be extended without rewriting everything. These are the "hooks" where you can add new features.
 
-1. **New Trace Types:** Add to `TRACE_TYPE_OPTIONS` dictionary and `add_trace()` method
-2. **New Properties:** Extend `EDITABLE_PROPERTIES` configuration
-3. **Export Formats:** Add new generators in `CodeGenerator` class
-4. **Theme Support:** Extend `TEMPLATE_OPTIONS` with custom themes
-5. **Plugin System:** Callbacks can be added dynamically
+**Where to Add New Features:**
+
+| Extension Type | Location | How to Extend |
+|----------------|----------|---------------|
+| **New Chart Type** | `PLOTS` tab buttons + callback | Add button in ribbon, add case in `generate_smart_plot_code()` |
+| **New Property** | Inspector panel | Add to property extraction logic, add input component |
+| **New Export Format** | `CodeGenerator` class | Add new method like `generate_matplotlib_code()` |
+| **New Theme** | Theme dropdown | Add to `TEMPLATE_OPTIONS` list |
+| **New Drawing Tool** | `ANNOTATE` tab | Add button, set appropriate `dragmode` |
+
+**Example: Adding a New Chart Type (Radar Chart)**
+
+```python
+# Step 1: Add button in PLOTS tab (ribbon definition)
+dbc.Button("Radar", id="btn-plot-radar", color="outline-secondary", size="sm")
+
+# Step 2: Add to callback Input list
+Input("btn-plot-radar", "n_clicks"),
+
+# Step 3: Add case in generate_smart_plot_code()
+elif plot_type == 'radar':
+    categories = cat_cols[0] if cat_cols else df.columns[0]
+    values = num_cols[0] if num_cols else df.columns[1]
+    cmd = f"fig = go.Figure(go.Scatterpolar(r={df_name}['{values}'], theta={df_name}['{categories}'], fill='toself'))"
+
+# Step 4: Handle in callback
+if ctx.triggered_id == "btn-plot-radar":
+    plot_type = "radar"
+```
 
 ---
 
 ## 4. Core Implementation Details
 
+> 💡 **Tips:** This is the most technical chapter - it explains HOW the code actually works. Don't worry if you don't understand everything at first! Read through it once, then come back when you're working on specific features.
+
 This chapter provides an in-depth examination of the actual implementation, with extensive code analysis and explanations suitable for understanding every aspect of the system.
 
-### 4.1 Application Initialization and Configuration
+### 4.1 Application Initialization - The "Birth" of Your App
 
-The application begins with essential imports and configuration:
+> 💡 **Tips:** This section explains how the application "wakes up" when you run it. Think of it like starting a car - there's a specific sequence of things that must happen before you can drive!
+
+#### 4.1.1 Understanding Auto-Dependency Installation
+
+One clever feature of `app.py` is that it **automatically installs missing libraries** when you first run it. This is unusual but very user-friendly:
 
 ```python
+# app.py (Lines 1-35) - Auto-Installation System
+# =============================================================================
+# Auto-Install Dependencies if Missing (Convenience Feature)
+# =============================================================================
+
+REQUIRED_PACKAGES = [
+    ("dash", "dash"),
+    ("dash_bootstrap_components", "dash-bootstrap-components"),
+    ("plotly", "plotly"),
+    ("pandas", "pandas"),
+    ("numpy", "numpy"),
+]
+
+import subprocess
+import sys
+
+for import_name, pip_name in REQUIRED_PACKAGES:
+    try:
+        __import__(import_name)           # Try to import the package
+    except ImportError:
+        print(f"📦 Installing {pip_name}...")
+        subprocess.check_call([           # If not found, install it!
+            sys.executable, "-m", "pip", 
+            "install", pip_name
+        ])
+```
+
+**How This Works (Step by Step):**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    AUTO-INSTALL FLOW                                │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  For each required package:                                         │
+│                                                                     │
+│  ┌──────────────────┐     Success    ┌─────────────────────┐       │
+│  │ Try to import    │ ─────────────► │ Package OK!         │       │
+│  │ the package      │                │ Move to next        │       │
+│  └──────────────────┘                └─────────────────────┘       │
+│          │                                                          │
+│          │ ImportError (not installed)                              │
+│          ▼                                                          │
+│  ┌──────────────────┐                ┌─────────────────────┐       │
+│  │ Run pip install  │ ─────────────► │ Now import it       │       │
+│  │ automatically    │                │ and continue        │       │
+│  └──────────────────┘                └─────────────────────┘       │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+> 💡 **Tips:** This is like a restaurant that checks if ingredients are available before cooking. If something is missing, it sends someone to buy it first!
+
+---
+
+#### 4.1.2 Import Statements - Loading Your Toolbox
+
+After dependencies are ensured, the app loads all necessary libraries:
+
+```python
+# app.py (Lines 40-75) - Core Imports
 # =============================================================================
 # IMPORTS
 # =============================================================================
 import dash
-from dash import dcc, html, Input, Output, State, callback_context, ALL, MATCH
+from dash import dcc, html, Input, Output, State, ctx
 from dash.exceptions import PreventUpdate
+from dash import dash_table
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import plotly.express as px
@@ -1157,23 +3012,87 @@ import pandas as pd
 import json
 import base64
 import io
-from datetime import datetime
+import uuid
+from collections import defaultdict
+from typing import List, Dict, Any, Optional, cast
 ```
 
-**Import Analysis:**
+**Import Analysis Table - What Each Library Does:**
 
-| Import | Purpose | Critical Functions |
-|--------|---------|-------------------|
-| `dash` | Core framework | App creation, callbacks |
-| `dcc` | Dash Core Components | Graph, Dropdown, Input, Store |
-| `html` | HTML components | Div, Button, Span, H1-H6 |
-| `dbc` | Bootstrap Components | Card, Row, Col, Modal, Tabs |
-| `go` | Graph Objects | Figure, Scatter, Bar, etc. |
-| `px` | Plotly Express | Quick chart creation |
-| `np` | NumPy | Numerical operations |
-| `pd` | Pandas | DataFrame operations |
-| `json` | JSON handling | Session save/load |
-| `base64` | Encoding | Image handling |
+| Import | Real Name | Purpose | Where It's Used |
+|--------|-----------|---------|-----------------|
+| `dash` | Dash Core | The main framework that makes the app work | Creating the app, routing |
+| `dcc` | Dash Core Components | Pre-built interactive widgets | Graph, Dropdown, Store, Upload |
+| `html` | Dash HTML Components | Basic HTML elements as Python | Div, H1, Button, Span |
+| `dbc` | Dash Bootstrap Components | Beautiful styled components | Card, Row, Col, Modal, Tabs |
+| `go` | Plotly Graph Objects | Low-level chart building blocks | Scatter, Bar, Figure, Surface |
+| `px` | Plotly Express | Quick chart creation | One-liner charts |
+| `np` | NumPy | Fast numerical operations | Array math, linspace, random |
+| `pd` | Pandas | Data manipulation | DataFrame, read_csv, describe |
+| `json` | JSON Library | Save/load structured data | Session export/import |
+| `base64` | Base64 Encoding | Handle binary data as text | Image upload, CSV upload |
+| `ctx` | Callback Context | Know which button was clicked | Multi-input callbacks |
+| `PreventUpdate` | Update Prevention | Stop a callback from doing anything | Guard clauses |
+
+> 💡 **Tips:** Think of imports like unpacking a toolbox before starting a project. Each tool (library) has a specific purpose. You wouldn't use a hammer (NumPy) to paint a wall (make buttons), right?
+
+---
+
+#### 4.1.3 Application Creation - The "Main Engine"
+
+```python
+# app.py (Lines 80-95) - App Initialization
+# =============================================================================
+# APP INITIALIZATION
+# =============================================================================
+app = dash.Dash(
+    __name__,
+    external_stylesheets=[
+        dbc.themes.BOOTSTRAP,           # Beautiful Bootstrap styling
+        dbc.icons.FONT_AWESOME          # Icons like 📊 📈 🗑️
+    ],
+    suppress_callback_exceptions=True   # Allow dynamic component IDs
+)
+
+server = app.server  # WSGI server for deployment
+```
+
+**What Each Parameter Does:**
+
+| Parameter | Value | Why It's Needed |
+|-----------|-------|-----------------|
+| `__name__` | Module name | Helps Dash find static files |
+| `external_stylesheets` | Bootstrap + Icons | Makes the app look professional |
+| `suppress_callback_exceptions` | `True` | Allows callbacks for components that don't exist yet |
+| `server` | WSGI object | Required for PythonAnywhere/Heroku deployment |
+
+**Visual: What `suppress_callback_exceptions=True` Does:**
+
+```
+WITHOUT suppress_callback_exceptions=True:
+┌─────────────────────────────────────────────────────────────────────┐
+│  Callback for "inspector-controls" declared                         │
+│          │                                                          │
+│          ▼                                                          │
+│  🔍 Dash checks: Does "inspector-controls" exist in layout?         │
+│          │                                                          │
+│          ▼ (Component is dynamically created later)                 │
+│  ❌ ERROR: "Component with id 'inspector-controls' not found!"      │
+└─────────────────────────────────────────────────────────────────────┘
+
+WITH suppress_callback_exceptions=True:
+┌─────────────────────────────────────────────────────────────────────┐
+│  Callback for "inspector-controls" declared                         │
+│          │                                                          │
+│          ▼                                                          │
+│  🔍 Dash checks: Does "inspector-controls" exist?                   │
+│          │                                                          │
+│          ▼ (Not found, but that's OK!)                              │
+│  ✅ Continue - we'll find it when the component is created          │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+> 💡 **Tips:** It's like writing instructions for "the new employee" before they're hired. With `suppress_callback_exceptions`, Dash trusts that the component will exist when needed!
 | `callback_context` | Trigger detection | Multi-input callbacks |
 
 **Application Creation:**
@@ -1287,1644 +3206,2235 @@ EDITABLE_PROPERTIES = {
 }
 ```
 
-### 4.2 Layout Implementation
+---
 
-The application layout is built using Dash components organized in a hierarchical structure:
+### 4.2 Layout Implementation - Building the User Interface
 
-#### 4.2.1 Main Layout Structure
+> 💡 **Tips:** The "layout" is like the blueprint of a house. It defines where each room (component) goes, but doesn't define what happens when you flip a light switch (that's callbacks!).
+
+The application layout is built using Dash components organized in a hierarchical structure. Let's examine the ACTUAL code from `app.py`:
+
+#### 4.2.1 Main Layout Structure - The "Blueprint"
 
 ```python
+# app.py (Lines 1200-1225) - Main Layout
 app.layout = dbc.Container([
-    # Hidden stores for state management
-    dcc.Store(id='store-figure', data=None),
-    dcc.Store(id='store-history', data={'undo': [], 'redo': []}),
-    dcc.Store(id='store-datasets', data={}),
+    # Hidden state storage components (invisible to user)
+    dcc.Store(id='figure-store-client', data=None),    # Current figure data
+    dcc.Store(id='data-update-signal', data=0),        # Triggers data refresh
+    dcc.Store(id='trigger-run-signal', data=0),        # Triggers code execution
+    dcc.Download(id='download-component'),             # File download handler
     
-    # Header Section
-    create_header(),
-    
-    # Main Content Area
+    # Main visible structure
     dbc.Row([
-        # Left Panel: Graph Display
-        dbc.Col([
-            create_graph_panel()
-        ], width=8, className='pe-2'),
+        # Header with ribbon tabs
+        dbc.Col(create_ribbon_tabs(), width=12)
+    ]),
+    
+    dbc.Row([
+        # Left: Workspace (Command Window + Data View)
+        dbc.Col(workspace_panel, width=3),
         
-        # Right Panel: Property Inspector
+        # Center: The Main Canvas (Graph)
         dbc.Col([
-            create_property_inspector()
-        ], width=4, className='ps-2'),
-    ], className='mb-3'),
+            dcc.Graph(id='main-graph', figure=create_initial_figure(), ...)
+        ], width=6),
+        
+        # Right: Property Inspector
+        dbc.Col(property_inspector, width=3),
+    ]),
     
-    # Bottom Panel: Data Input
-    create_data_input_panel(),
+    # Hidden modals (pop-ups)
+    annotation_modal,
+    about_modal,
     
-    # Drawing Toolbar
-    create_drawing_toolbar(),
-    
-    # Modal Dialogs
-    create_annotation_modal(),
-    create_image_modal(),
-    create_code_modal(),
-    create_save_load_modal(),
-    
-], fluid=True, className='py-3')
+], fluid=True, style={"height": "100vh"})
 ```
 
-#### 4.2.2 Header Component Implementation
+**Visual: The Three-Column Layout**
 
-```python
-def create_header():
-    """Create the application header with toolbar buttons."""
-    return dbc.Card([
-        dbc.CardBody([
-            dbc.Row([
-                # Logo and Title
-                dbc.Col([
-                    html.H4([
-                        html.I(className='fas fa-chart-line me-2'),
-                        'PyFigureEditor'
-                    ], className='mb-0 text-primary')
-                ], width='auto'),
-                
-                # Main Toolbar Buttons
-                dbc.Col([
-                    dbc.ButtonGroup([
-                        dbc.Button([
-                            html.I(className='fas fa-file me-1'),
-                            'New'
-                        ], id='btn-new', color='outline-primary', size='sm'),
-                        
-                        dbc.Button([
-                            html.I(className='fas fa-folder-open me-1'),
-                            'Load'
-                        ], id='btn-load', color='outline-primary', size='sm'),
-                        
-                        dbc.Button([
-                            html.I(className='fas fa-save me-1'),
-                            'Save'
-                        ], id='btn-save', color='outline-primary', size='sm'),
-                    ], className='me-3'),
-                    
-                    dbc.ButtonGroup([
-                        dbc.Button([
-                            html.I(className='fas fa-undo')
-                        ], id='btn-undo', color='outline-secondary', size='sm',
-                           title='Undo (Ctrl+Z)'),
-                        
-                        dbc.Button([
-                            html.I(className='fas fa-redo')
-                        ], id='btn-redo', color='outline-secondary', size='sm',
-                           title='Redo (Ctrl+Y)'),
-                    ], className='me-3'),
-                    
-                    dbc.ButtonGroup([
-                        dbc.Button([
-                            html.I(className='fas fa-image me-1'),
-                            'PNG'
-                        ], id='btn-export-png', color='outline-success', size='sm'),
-                        
-                        dbc.Button([
-                            html.I(className='fas fa-code me-1'),
-                            'Code'
-                        ], id='btn-export-code', color='outline-success', size='sm'),
-                    ]),
-                ], width='auto'),
-                
-                # Plot Type and Template Selectors
-                dbc.Col([
-                    dbc.Row([
-                        dbc.Col([
-                            dbc.Label('Plot Type:', className='mb-0 me-2'),
-                            dcc.Dropdown(
-                                id='dd-plot-type',
-                                options=[{'label': v['label'], 'value': k} 
-                                        for k, v in TRACE_TYPE_OPTIONS.items()],
-                                value='scatter',
-                                clearable=False,
-                                style={'width': '150px'}
-                            )
-                        ], width='auto', className='d-flex align-items-center'),
-                        
-                        dbc.Col([
-                            dbc.Label('Template:', className='mb-0 me-2'),
-                            dcc.Dropdown(
-                                id='dd-template',
-                                options=[{'label': t, 'value': t} for t in TEMPLATE_OPTIONS],
-                                value='plotly_white',
-                                clearable=False,
-                                style={'width': '150px'}
-                            )
-                        ], width='auto', className='d-flex align-items-center'),
-                    ])
-                ], className='ms-auto'),
-            ], align='center'),
-        ])
-    ], className='mb-3')
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                        RIBBON TABS (HOME | DATA | PLOTS | ANNOTATE | VIEW)│
+├────────────────┬─────────────────────────────────────┬──────────────────────┤
+│                │                                     │                      │
+│   WORKSPACE    │          MAIN CANVAS               │  PROPERTY           │
+│    PANEL       │                                     │   INSPECTOR         │
+│                │      ┌─────────────────────┐       │                      │
+│  ┌──────────┐  │      │                     │       │  Element: [Trace 0]  │
+│  │ Command  │  │      │    YOUR CHART       │       │                      │
+│  │ Window   │  │      │    APPEARS HERE     │       │  Color: [  ▼  ]     │
+│  │          │  │      │                     │       │  Size:  [   10  ]   │
+│  │ >>> code │  │      │   📊 📈 📉          │       │  Style: [  ▼  ]     │
+│  └──────────┘  │      │                     │       │                      │
+│                │      └─────────────────────┘       │  [Apply Changes]     │
+│  ┌──────────┐  │                                     │  [Delete Element]    │
+│  │ Data     │  │                                     │                      │
+│  │ View     │  │                                     │                      │
+│  └──────────┘  │                                     │                      │
+│                │                                     │                      │
+│  width=3 (25%) │     width=6 (50%)                  │   width=3 (25%)      │
+└────────────────┴─────────────────────────────────────┴──────────────────────┘
 ```
 
-#### 4.2.3 Graph Panel Implementation
+> 💡 **Tips:** Bootstrap uses a 12-column grid system. So `width=3` means 3/12 = 25% of the screen width, and `width=6` means 50%.
+
+---
+
+#### 4.2.2 The Ribbon Tabs - ACTUAL Code from app.py
+
+The ribbon is like Microsoft Office's ribbon - it organizes tools into categories:
 
 ```python
-def create_graph_panel():
-    """Create the main graph display panel."""
-    return dbc.Card([
-        dbc.CardHeader([
-            html.H5([
-                html.I(className='fas fa-chart-area me-2'),
-                'Figure Preview'
-            ], className='mb-0')
-        ]),
-        dbc.CardBody([
-            dcc.Graph(
-                id='main-graph',
-                figure=go.Figure(layout={
-                    'template': 'plotly_white',
-                    'title': {'text': 'New Figure'},
-                    'xaxis': {'title': {'text': 'X Axis'}},
-                    'yaxis': {'title': {'text': 'Y Axis'}},
-                }),
-                config={
-                    'editable': True,              # Enable built-in editing
-                    'modeBarButtonsToAdd': [
-                        'drawline', 'drawopenpath', 'drawclosedpath',
-                        'drawcircle', 'drawrect', 'eraseshape'
-                    ],
-                    'displaylogo': False,          # Hide Plotly logo
-                    'toImageButtonOptions': {
-                        'format': 'png',
-                        'filename': 'pyfigureeditor_export',
-                        'height': 800,
-                        'width': 1200,
-                        'scale': 2                 # High resolution
-                    }
-                },
-                style={'height': '500px'}
-            )
-        ], className='p-2')
-    ])
-```
-
-#### 4.2.4 Property Inspector Implementation
-
-```python
-def create_property_inspector():
-    """Create the property inspector panel."""
-    return dbc.Card([
-        dbc.CardHeader([
-            html.H5([
-                html.I(className='fas fa-sliders-h me-2'),
-                'Property Inspector'
-            ], className='mb-0')
-        ]),
-        dbc.CardBody([
-            # Element Selection Dropdown
-            dbc.Label('Select Element:', className='fw-bold'),
-            dcc.Dropdown(
-                id='dd-element-select',
-                placeholder='Select an element to edit...',
-                className='mb-3'
+# app.py (Lines 900-1050) - Ribbon Implementation
+ribbon_home = dbc.Card([
+    dbc.CardBody([
+        dbc.ButtonGroup([
+            # Session Management
+            dbc.Button([html.I(className="fas fa-save me-1"), "Save"], 
+                      id="btn-save-session", color="outline-primary", size="sm"),
+            dcc.Upload(id="upload-session", children=
+                dbc.Button([html.I(className="fas fa-folder-open me-1"), "Load"],
+                          color="outline-primary", size="sm"),
             ),
-            
+        ], className="me-3"),
+        
+        # Undo/Redo
+        dbc.ButtonGroup([
+            dbc.Button([html.I(className="fas fa-undo")], 
+                      id="btn-undo", color="outline-secondary", size="sm"),
+            dbc.Button([html.I(className="fas fa-redo")], 
+                      id="btn-redo", color="outline-secondary", size="sm"),
+        ], className="me-3"),
+        
+        # About
+        dbc.Button([html.I(className="fas fa-info-circle me-1"), "About"],
+                  id="btn-open-about", color="outline-info", size="sm"),
+    ], className="py-1")
+], className="border-0 bg-transparent")
+```
+
+**Ribbon Tab Organization (from app.py):**
+
+| Tab | Components | Purpose |
+|-----|------------|---------|
+| **HOME** | Save, Load, Undo, Redo, About | Session management |
+| **DATA** | Import CSV, Load Demo, Delete, Clean NA, View Table/Stats/Types | Data operations |
+| **PLOTS** | 26+ chart type buttons (Scatter, Line, Bar, Pie, 3D...) | Create visualizations |
+| **ANNOTATE** | Draw Line/Rect/Circle, Add Text, Upload Image | Add annotations |
+| **VIEW** | Zoom, Pan, Reset, Inspector Toggle | Navigation tools |
+
+---
+
+#### 4.2.3 The PLOTS Tab - 26+ Chart Types in One Place
+
+```python
+# app.py (Lines 1000-1100) - PLOTS Tab with ALL Chart Types
+ribbon_plots = dbc.Card([
+    dbc.CardBody([
+        # Basic 2D Charts
+        html.Span("Basic:", className="text-muted small me-2"),
+        dbc.ButtonGroup([
+            dbc.Button("Scatter", id="btn-plot-scatter", color="outline-secondary", size="sm"),
+            dbc.Button("Line", id="btn-plot-line", color="outline-secondary", size="sm"),
+            dbc.Button("Bar", id="btn-plot-bar", color="outline-secondary", size="sm"),
+            dbc.Button("Area", id="btn-plot-area", color="outline-secondary", size="sm"),
+            dbc.Button("Bubble", id="btn-plot-bubble", color="outline-secondary", size="sm"),
+        ], className="me-3"),
+        
+        # Distribution Charts
+        html.Span("Dist:", className="text-muted small me-2"),
+        dbc.ButtonGroup([
+            dbc.Button("Pie", id="btn-plot-pie", color="outline-secondary", size="sm"),
+            dbc.Button("Hist", id="btn-plot-hist", color="outline-secondary", size="sm"),
+            dbc.Button("Box", id="btn-plot-box", color="outline-secondary", size="sm"),
+            dbc.Button("Violin", id="btn-plot-violin", color="outline-secondary", size="sm"),
+        ], className="me-3"),
+        
+        # 3D & Contour Charts
+        html.Span("3D:", className="text-muted small me-2"),
+        dbc.ButtonGroup([
+            dbc.Button("3D Scatter", id="btn-plot-scatter3d", color="outline-secondary", size="sm"),
+            dbc.Button("Line 3D", id="btn-plot-line3d", color="outline-secondary", size="sm"),
+            dbc.Button("Surface", id="btn-plot-surface", color="outline-secondary", size="sm"),
+            dbc.Button("Contour", id="btn-plot-contour", color="outline-secondary", size="sm"),
+        ], className="me-3"),
+        
+        # Specialized Charts
+        html.Span("Special:", className="text-muted small me-2"),
+        dbc.ButtonGroup([
+            dbc.Button("Sunburst", id="btn-plot-sunburst", color="outline-secondary", size="sm"),
+            dbc.Button("Treemap", id="btn-plot-treemap", color="outline-secondary", size="sm"),
+            dbc.Button("Heatmap", id="btn-plot-heatmap", color="outline-secondary", size="sm"),
+            dbc.Button("Polar", id="btn-plot-polar", color="outline-secondary", size="sm"),
+            dbc.Button("Candle", id="btn-plot-candle", color="outline-secondary", size="sm"),
+            dbc.Button("Waterfall", id="btn-plot-waterfall", color="outline-secondary", size="sm"),
+        ], className="me-3"),
+        
+        # Geographic Charts
+        html.Span("Geo:", className="text-muted small me-2"),
+        dbc.ButtonGroup([
+            dbc.Button("Geo", id="btn-plot-scatgeo", color="outline-secondary", size="sm"),
+            dbc.Button("Choro", id="btn-plot-choropleth", color="outline-secondary", size="sm"),
+            dbc.Button("Globe", id="btn-plot-globe", color="outline-secondary", size="sm"),
+        ]),
+    ], className="py-1")
+], className="border-0 bg-transparent")
+```
+
+**Chart Type Categorization:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         26+ CHART TYPES                                 │
+├─────────────┬───────────────────────────────────────────────────────────┤
+│ CATEGORY    │ CHART TYPES                                               │
+├─────────────┼───────────────────────────────────────────────────────────┤
+│ Basic 2D    │ Scatter • Line • Bar • Area • Bubble                      │
+├─────────────┼───────────────────────────────────────────────────────────┤
+│ Distribution│ Pie • Histogram • Box Plot • Violin                       │
+├─────────────┼───────────────────────────────────────────────────────────┤
+│ 3D & Contour│ 3D Scatter • 3D Line • Surface • Contour                  │
+├─────────────┼───────────────────────────────────────────────────────────┤
+│ Specialized │ Sunburst • Treemap • Heatmap • Polar •                    │
+│             │ Candlestick • Waterfall • Funnel • OHLC                   │
+├─────────────┼───────────────────────────────────────────────────────────┤
+│ Geographic  │ Scatter Geo • Choropleth • Globe                          │
+├─────────────┼───────────────────────────────────────────────────────────┤
+│ Advanced    │ Scatter Matrix • Parallel Coordinates • Ternary           │
+└─────────────┴───────────────────────────────────────────────────────────┘
+```
+
+> 💡 **Tips:** Each button is an `Input` to a callback. When you click "Scatter", the callback sees `ctx.triggered_id == "btn-plot-scatter"` and generates the right code!
+
+---
+
+#### 4.2.4 The Workspace Panel - Command Window & Data View
+
+```python
+# app.py (Lines 1100-1150) - Workspace Panel
+workspace_panel = dbc.Card([
+    dbc.CardHeader([
+        dbc.Tabs([
+            dbc.Tab(label="Command Window", tab_id="tab-cmd"),
+            dbc.Tab(label="Data View", tab_id="tab-dataview"),
+        ], id="workspace-tabs", active_tab="tab-cmd")
+    ], className="py-1"),
+    dbc.CardBody([
+        # Command Window Content (MATLAB-style)
+        html.Div([
+            dcc.Textarea(
+                id='code-editor',
+                placeholder="# Enter Python/Plotly code here...\n# Variables: figure_store, px, go, pd, np",
+                style={'width': '100%', 'height': '200px', 'fontFamily': 'monospace'}
+            ),
+            dbc.Button("▶ Run Code", id="btn-run-custom-code", color="success", size="sm"),
             html.Hr(),
-            
-            # Dynamic Property Controls Container
-            html.Div(id='inspector-controls', children=[
-                html.P('Select an element from the dropdown above to edit its properties.',
-                       className='text-muted')
-            ]),
-            
-            html.Hr(),
-            
-            # Action Buttons
-            dbc.Row([
-                dbc.Col([
-                    dbc.Button([
-                        html.I(className='fas fa-check me-1'),
-                        'Apply'
-                    ], id='btn-apply-props', color='primary', className='w-100')
-                ], width=4),
-                dbc.Col([
-                    dbc.Button([
-                        html.I(className='fas fa-sync me-1'),
-                        'Reset'
-                    ], id='btn-reset-props', color='secondary', className='w-100')
-                ], width=4),
-                dbc.Col([
-                    dbc.Button([
-                        html.I(className='fas fa-trash me-1'),
-                        'Delete'
-                    ], id='btn-delete-element', color='danger', className='w-100')
-                ], width=4),
-            ])
-        ], style={'maxHeight': '600px', 'overflowY': 'auto'})
-    ])
+            html.Pre(id="console-output", children=">>> Ready.",
+                    style={'height': '200px', 'overflow': 'auto', 'backgroundColor': '#1e1e1e', 'color': '#00ff00'})
+        ], id="workspace-content-cmd"),
+        
+        # Data View Content (Spreadsheet-style)
+        html.Div([
+            html.Div(id="data-table-container", children="Select a dataset to view.")
+        ], id="workspace-content-dataview", style={"display": "none"}),
+    ], className="p-2")
+], className="h-100")
 ```
 
-### 4.3 Callback Implementation
+**The Command Window - How It Works:**
 
-Callbacks are the heart of the application's interactivity. This section analyzes key callbacks in detail.
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ COMMAND WINDOW FLOW                                                 │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  User types in code-editor:                                         │
+│  ┌─────────────────────────────────────────┐                       │
+│  │ fig = px.scatter(demo_data, x='x_val',  │                       │
+│  │                  y='y_val', color='cat')│                       │
+│  └─────────────────────────────────────────┘                       │
+│          │                                                          │
+│          ▼ [▶ Run Code] clicked                                    │
+│  ┌─────────────────────────────────────────┐                       │
+│  │ execute_code() callback triggers        │                       │
+│  │ 1. exec(code, {}, local_scope)         │                       │
+│  │ 2. Check if 'fig' in local_scope       │                       │
+│  │ 3. Update main-graph with new figure   │                       │
+│  └─────────────────────────────────────────┘                       │
+│          │                                                          │
+│          ▼                                                          │
+│  ┌─────────────────────────────────────────┐                       │
+│  │ Console shows: ">>> Code executed       │                       │
+│  │                  successfully."         │                       │
+│  └─────────────────────────────────────────┘                       │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
-#### 4.3.1 Add Trace Callback
+> 💡 **Tips:** The Command Window is like a mini-Jupyter notebook inside the app. You can type any Python code that creates a `fig` variable, and it will appear on the canvas!
 
-This callback handles adding new data traces to the figure:
+---
+
+#### 4.2.5 The Property Inspector - Dynamic UI Generation
+
+One of the most sophisticated parts of the app is the Property Inspector. It **dynamically generates different controls** based on what element you select!
+
+```python
+# app.py (Lines 1150-1180) - Property Inspector Structure
+property_inspector = dbc.Card([
+    dbc.CardHeader([
+        html.H6([html.I(className="fas fa-sliders-h me-1"), "Inspector"], className="mb-0")
+    ], className="py-2"),
+    dbc.CardBody([
+        # Element Selection Dropdown
+        dbc.Label("Element:", className="small fw-bold"),
+        dcc.Dropdown(id="dd-element-select", placeholder="Select element..."),
+        
+        html.Hr(),
+        
+        # Highlight Button
+        dbc.Button("🔦 Highlight", id="btn-highlight", color="outline-warning", size="sm"),
+        
+        html.Hr(),
+        
+        # DYNAMIC CONTROLS CONTAINER - This gets replaced based on selection!
+        html.Div(id="inspector-controls", children=[
+            html.P("Select an element above to edit.", className="text-muted small")
+        ])
+    ], className="p-2", style={"maxHeight": "calc(100vh - 200px)", "overflowY": "auto"})
+], className="h-100")
+```
+
+**How Dynamic Inspector Works (The Magic!):**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ DYNAMIC INSPECTOR GENERATION                                         │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  User selects "trace_0" from dropdown                               │
+│          │                                                          │
+│          ▼                                                          │
+│  update_inspector_controls() callback runs                          │
+│          │                                                          │
+│          ▼                                                          │
+│  ┌─────────────────────────────────────────┐                       │
+│  │ if selected_element == "figure":        │                       │
+│  │   → Show: Title, Width, Height, Theme   │                       │
+│  │   → Show: X/Y Axis Titles, Legend, etc. │                       │
+│  │                                          │                       │
+│  │ elif selected_element.startswith("trace_"): │                   │
+│  │   → Show: Name, Color, Size, Opacity    │                       │
+│  │   → Show: Symbol, Line Width, Dash      │                       │
+│  │                                          │                       │
+│  │ elif selected_element.startswith("shape_"): │                   │
+│  │   → Show: Line Color, Fill Color, Width │                       │
+│  │                                          │                       │
+│  │ elif selected_element.startswith("annot_"): │                   │
+│  │   → Show: Text, Font Size, Position     │                       │
+│  └─────────────────────────────────────────┘                       │
+│          │                                                          │
+│          ▼                                                          │
+│  Returns: html.Div([...dynamically created controls...])            │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Available Properties by Element Type (from actual code):**
+
+| Element Type | Available Properties |
+|-------------|---------------------|
+| **Figure** | Title, Width, Height, Plot Color, Paper Color, Font, Theme, X/Y Titles, Legend, Hover Mode, Grid, Bar Mode, Log Scale, Spikes, Zero Line |
+| **Trace** | Name, Color, Size, Opacity, Symbol, Line Width, Dash Style, Mode, Fill, Text Position, Border Color, Line Shape |
+| **Annotation** | Text, Color, Font Size, Font Family, X/Y Position, Show Arrow, Background Color, Text Angle |
+| **Shape** | Line Color, Line Width, Opacity, Dash Style, Fill Color |
+| **Image** | Opacity, Size X/Y, Position X/Y |
+
+> 💡 **Tips:** This is why the Inspector looks different depending on what you select. The same `inspector-controls` div gets REPLACED with different content each time!
+
+### 4.3 Callback Implementation - The "Brain" of the Application
+
+> 💡 **Tips:** If the layout is the "body" of the app, callbacks are the "brain". They define WHAT HAPPENS when users interact with components. This is where the real magic happens!
+
+Callbacks are the heart of the application's interactivity. Let's analyze the ACTUAL callbacks from `app.py`:
+
+#### 4.3.1 Understanding Callback Structure
+
+Every callback in Dash follows this pattern:
 
 ```python
 @app.callback(
-    Output('main-graph', 'figure', allow_duplicate=True),
-    Output('store-history', 'data', allow_duplicate=True),
-    Input('btn-add-trace', 'n_clicks'),
-    State('main-graph', 'figure'),
-    State('store-history', 'data'),
-    State('dd-plot-type', 'value'),
-    State('dd-input-type', 'value'),
-    State('textarea-data', 'value'),
-    prevent_initial_call=True
+    Output("component-id", "property-to-update"),   # What changes
+    Input("trigger-component", "property-that-triggers"),   # What causes the change
+    State("another-component", "property-to-read"),   # Extra info needed
+    prevent_initial_call=True   # Don't run when app first loads
 )
-def add_trace(n_clicks, current_figure, history, plot_type, input_type, data_text):
-    """
-    Add a new trace to the figure based on user input.
-    
-    Process Flow:
-    1. Validate inputs (prevent if empty/invalid)
-    2. Parse data text into x, y arrays
-    3. Create appropriate trace object
-    4. Push current state to history
-    5. Add trace to figure
-    6. Return updated figure and history
-    """
-    # Guard clause: prevent if no click or empty data
-    if not n_clicks or not data_text:
-        raise PreventUpdate
-    
-    # Step 1: Parse the input data
-    try:
-        x_data, y_data, z_data = parse_data_input(data_text, input_type)
-    except ValueError as e:
-        # In production: show error toast notification
-        raise PreventUpdate
-    
-    # Step 2: Create figure object from current state
-    fig = go.Figure(current_figure)
-    
-    # Step 3: Push current state to undo history
-    history = push_to_history(history, current_figure)
-    
-    # Step 4: Determine trace constructor and create trace
-    trace_config = TRACE_TYPE_OPTIONS.get(plot_type, TRACE_TYPE_OPTIONS['scatter'])
-    constructor = trace_config['constructor']
-    
-    # Build trace arguments
-    trace_args = {
-        'x': x_data,
-        'y': y_data,
-        'name': f'Trace {len(fig.data) + 1}'
-    }
-    
-    # Add mode for scatter-based traces
-    if constructor == go.Scatter:
-        trace_args['mode'] = trace_config.get('mode', 'lines+markers')
-        if 'fill' in trace_config:
-            trace_args['fill'] = trace_config['fill']
-    
-    # Handle 3D traces
-    if z_data is not None and constructor in [go.Scatter3d, go.Surface, go.Mesh3d]:
-        trace_args['z'] = z_data
-    
-    # Step 5: Add the trace
-    fig.add_trace(constructor(**trace_args))
-    
-    # Step 6: Return updated figure and history
-    return fig.to_dict(), history
+def callback_function(trigger_value, state_value):
+    # Your logic here
+    return new_value_for_output
 ```
 
-**Callback Analysis:**
+**The Three Types of Callback Arguments:**
 
-| Aspect | Implementation Detail |
-|--------|----------------------|
-| **Trigger** | `btn-add-trace.n_clicks` |
-| **Outputs** | Figure (duplicate), History (duplicate) |
-| **States** | 5 state values for context |
-| **Error Handling** | PreventUpdate on invalid input |
-| **History** | Push before modification |
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ CALLBACK ARGUMENT TYPES                                             │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  INPUT  ──────────────────────────────────────────────────────────  │
+│  • Triggers the callback when its value changes                     │
+│  • Example: Button click, dropdown selection, text input            │
+│  • If there are multiple Inputs, ANY change triggers the callback   │
+│                                                                     │
+│  STATE  ──────────────────────────────────────────────────────────  │
+│  • Provides additional data but does NOT trigger the callback       │
+│  • Example: Current figure, selected dropdown value                 │
+│  • Think of it as "read-only context"                               │
+│                                                                     │
+│  OUTPUT ─────────────────────────────────────────────────────────── │
+│  • What gets updated when the callback runs                         │
+│  • Example: Figure, text content, component visibility              │
+│  • Can have multiple outputs (return a tuple)                       │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
-#### 4.3.2 Element Selection Update Callback
+> 💡 **Tips:** Think of it like a recipe. **Input** is "when to start cooking" (turning on the stove), **State** is "ingredients already on the counter", and **Output** is "the finished dish"!
 
-This callback dynamically generates property controls based on the selected element:
+---
+
+#### 4.3.2 Tab Switching Callback - The Simplest Example
+
+Let's start with the simplest callback - switching ribbon tabs:
 
 ```python
+# app.py (Lines 1235-1250) - Ribbon Tab Switching
 @app.callback(
-    Output('inspector-controls', 'children'),
-    Input('dd-element-select', 'value'),
-    State('main-graph', 'figure')
+    Output("ribbon-content-home", "style"),
+    Output("ribbon-content-data", "style"),
+    Output("ribbon-content-plots", "style"),
+    Output("ribbon-content-annotate", "style"),
+    Output("ribbon-content-view", "style"),
+    Input("ribbon-tabs", "active_tab"),
 )
-def update_inspector_controls(selected_element, figure):
-    """
-    Generate property editing controls for the selected element.
+def toggle_ribbon(active_tab):
+    """Show only the content for the active tab."""
+    show = {"display": "block"}   # CSS to show element
+    hide = {"display": "none"}    # CSS to hide element
     
-    Element Types Handled:
-    - 'trace-0', 'trace-1', etc. → Trace properties
-    - 'layout' → Layout properties
-    - 'annotation-0', etc. → Annotation properties
-    - 'shape-0', etc. → Shape properties
-    - 'image-0', etc. → Image properties
-    """
-    if not selected_element or not figure:
-        return html.P('Select an element to edit its properties.', 
-                     className='text-muted')
-    
-    # Parse element type and index
-    element_parts = selected_element.split('-')
-    element_type = element_parts[0]
-    element_index = int(element_parts[1]) if len(element_parts) > 1 else None
-    
-    # Get current property values
-    if element_type == 'trace':
-        current_values = figure['data'][element_index]
-        property_config = EDITABLE_PROPERTIES['trace']
-    elif element_type == 'layout':
-        current_values = figure['layout']
-        property_config = EDITABLE_PROPERTIES['layout']
-    elif element_type == 'annotation':
-        current_values = figure['layout'].get('annotations', [])[element_index]
-        property_config = EDITABLE_PROPERTIES['annotation']
-    elif element_type == 'shape':
-        current_values = figure['layout'].get('shapes', [])[element_index]
-        property_config = EDITABLE_PROPERTIES['shape']
-    elif element_type == 'image':
-        current_values = figure['layout'].get('images', [])[element_index]
-        property_config = EDITABLE_PROPERTIES['image']
-    else:
-        return html.P('Unknown element type.', className='text-danger')
-    
-    # Generate controls for each property
-    controls = []
-    for prop_key, prop_config in property_config.items():
-        # Get nested property value (e.g., 'line.color' → figure.data[0].line.color)
-        current_value = get_nested_value(current_values, prop_key)
-        
-        # Create appropriate input component
-        control = create_property_control(
-            prop_key=prop_key,
-            prop_config=prop_config,
-            current_value=current_value,
-            element_id=selected_element
-        )
-        controls.append(control)
-    
-    return html.Div(controls)
-
-
-def create_property_control(prop_key, prop_config, current_value, element_id):
-    """Create a single property editing control."""
-    control_type = prop_config['type']
-    label = prop_config['label']
-    
-    # Create unique ID for this control
-    control_id = {'type': 'prop-control', 'element': element_id, 'property': prop_key}
-    
-    if control_type == 'text':
-        input_component = dbc.Input(
-            id=control_id,
-            type='text',
-            value=current_value or '',
-            placeholder=f'Enter {label}...'
-        )
-    
-    elif control_type == 'number':
-        input_component = dbc.Input(
-            id=control_id,
-            type='number',
-            value=current_value,
-            min=prop_config.get('min'),
-            max=prop_config.get('max'),
-            step=prop_config.get('step', 1)
-        )
-    
-    elif control_type == 'color':
-        input_component = dbc.Input(
-            id=control_id,
-            type='color',
-            value=current_value or '#000000',
-            style={'width': '100%', 'height': '38px'}
-        )
-    
-    elif control_type == 'dropdown':
-        input_component = dcc.Dropdown(
-            id=control_id,
-            options=[{'label': str(o), 'value': o} for o in prop_config['options']],
-            value=current_value,
-            clearable=False
-        )
-    
-    elif control_type == 'checkbox':
-        input_component = dbc.Checkbox(
-            id=control_id,
-            value=bool(current_value),
-            label=''
-        )
-    
-    else:
-        input_component = html.Span('Unsupported type', className='text-danger')
-    
-    return dbc.Row([
-        dbc.Col([
-            dbc.Label(label, className='mb-0')
-        ], width=5),
-        dbc.Col([
-            input_component
-        ], width=7)
-    ], className='mb-2 align-items-center')
+    return (
+        show if active_tab == "tab-home" else hide,      # HOME tab content
+        show if active_tab == "tab-data" else hide,      # DATA tab content
+        show if active_tab == "tab-plots" else hide,     # PLOTS tab content
+        show if active_tab == "tab-annotate" else hide,  # ANNOTATE tab content
+        show if active_tab == "tab-view" else hide,      # VIEW tab content
+    )
 ```
 
-#### 4.3.3 Apply Properties Callback
+**How This Works (Visual):**
 
-This callback applies edited properties back to the figure:
-
-```python
-@app.callback(
-    Output('main-graph', 'figure', allow_duplicate=True),
-    Output('store-history', 'data', allow_duplicate=True),
-    Input('btn-apply-props', 'n_clicks'),
-    State('dd-element-select', 'value'),
-    State('main-graph', 'figure'),
-    State('store-history', 'data'),
-    State({'type': 'prop-control', 'element': ALL, 'property': ALL}, 'value'),
-    State({'type': 'prop-control', 'element': ALL, 'property': ALL}, 'id'),
-    prevent_initial_call=True
-)
-def apply_properties(n_clicks, selected_element, figure, history, 
-                     control_values, control_ids):
-    """
-    Apply property changes from inspector to the figure.
-    
-    Pattern Matching Callback:
-    - Uses ALL pattern to capture all property controls
-    - control_ids contains metadata about each control
-    - control_values contains current values
-    """
-    if not n_clicks or not selected_element:
-        raise PreventUpdate
-    
-    # Safety check for callback trigger
-    ctx = callback_context
-    if not ctx.triggered_id:
-        raise PreventUpdate
-    
-    # Create figure object
-    fig = go.Figure(figure)
-    
-    # Push to history before changes
-    history = push_to_history(history, figure)
-    
-    # Parse element info
-    element_parts = selected_element.split('-')
-    element_type = element_parts[0]
-    element_index = int(element_parts[1]) if len(element_parts) > 1 else None
-    
-    # Build property updates dictionary
-    updates = {}
-    for control_id, value in zip(control_ids, control_values):
-        if control_id['element'] == selected_element:
-            prop_key = control_id['property']
-            updates[prop_key] = value
-    
-    # Apply updates based on element type
-    if element_type == 'trace':
-        apply_trace_updates(fig, element_index, updates)
-    elif element_type == 'layout':
-        apply_layout_updates(fig, updates)
-    elif element_type == 'annotation':
-        apply_annotation_updates(fig, element_index, updates)
-    elif element_type == 'shape':
-        apply_shape_updates(fig, element_index, updates)
-    
-    return fig.to_dict(), history
-
-
-def apply_trace_updates(fig, trace_index, updates):
-    """Apply property updates to a specific trace."""
-    for prop_key, value in updates.items():
-        # Handle nested properties (e.g., 'line.color')
-        keys = prop_key.split('.')
-        
-        if len(keys) == 1:
-            # Simple property
-            fig.data[trace_index][keys[0]] = value
-        elif len(keys) == 2:
-            # Nested property
-            parent, child = keys
-            if parent not in fig.data[trace_index]:
-                fig.data[trace_index][parent] = {}
-            fig.data[trace_index][parent][child] = value
 ```
-
-#### 4.3.4 Delete Element Callback
-
-This callback handles deletion of traces, annotations, shapes, and images:
-
-```python
-@app.callback(
-    Output('main-graph', 'figure', allow_duplicate=True),
-    Output('store-history', 'data', allow_duplicate=True),
-    Output('dd-element-select', 'value', allow_duplicate=True),
-    Input('btn-delete-element', 'n_clicks'),
-    State('dd-element-select', 'value'),
-    State('main-graph', 'figure'),
-    State('store-history', 'data'),
-    prevent_initial_call=True
-)
-def delete_element(n_clicks, selected_element, figure, history):
-    """
-    Delete the selected element from the figure.
-    
-    Handles:
-    - Traces: Remove from fig.data
-    - Annotations: Remove from fig.layout.annotations
-    - Shapes: Remove from fig.layout.shapes
-    - Images: Remove from fig.layout.images
-    """
-    # Safety check
-    ctx = callback_context
-    if not ctx.triggered_id or not n_clicks or not selected_element:
-        raise PreventUpdate
-    
-    # Parse element info
-    element_parts = selected_element.split('-')
-    element_type = element_parts[0]
-    
-    if len(element_parts) < 2:
-        raise PreventUpdate  # Can't delete 'layout'
-    
-    element_index = int(element_parts[1])
-    
-    # Create figure and push history
-    fig = go.Figure(figure)
-    history = push_to_history(history, figure)
-    
-    # Perform deletion based on type
-    if element_type == 'trace':
-        # Remove trace from data array
-        data_list = list(fig.data)
-        if 0 <= element_index < len(data_list):
-            del data_list[element_index]
-            fig.data = data_list
-    
-    elif element_type == 'annotation':
-        annotations = list(fig.layout.annotations or [])
-        if 0 <= element_index < len(annotations):
-            del annotations[element_index]
-            fig.update_layout(annotations=annotations)
-    
-    elif element_type == 'shape':
-        shapes = list(fig.layout.shapes or [])
-        if 0 <= element_index < len(shapes):
-            del shapes[element_index]
-            fig.update_layout(shapes=shapes)
-    
-    elif element_type == 'image':
-        images = list(fig.layout.images or [])
-        if 0 <= element_index < len(images):
-            del images[element_index]
-            fig.update_layout(images=images)
-    
-    # Clear selection and return
-    return fig.to_dict(), history, None
-```
-
-### 4.4 Helper Functions
-
-Several utility functions support the callback logic:
-
-#### 4.4.1 Data Parsing Functions
-
-```python
-def parse_data_input(text, input_type):
-    """
-    Parse user text input into numerical arrays.
-    
-    Args:
-        text: Raw text input from user
-        input_type: One of 'xy_pairs', 'separate_xy', 'csv'
-        
-    Returns:
-        Tuple of (x_list, y_list, z_list_or_None)
-    """
-    if input_type == 'xy_pairs':
-        # Format: (1,2), (3,4), (5,6)
-        return parse_xy_pairs(text)
-    elif input_type == 'separate_xy':
-        # Format: x: 1,2,3 y: 4,5,6
-        return parse_separate_xy(text)
-    elif input_type == 'csv':
-        # Format: CSV with columns
-        return parse_csv(text)
-    elif input_type == 'function':
-        # Format: Mathematical expression
-        return parse_function(text)
-    else:
-        raise ValueError(f'Unknown input type: {input_type}')
-
-
-def parse_xy_pairs(text):
-    """Parse (x,y) pair format."""
-    import re
-    
-    # Match patterns like (1,2) or (1.5, -2.3)
-    pattern = r'\(([^,]+),([^)]+)\)'
-    matches = re.findall(pattern, text)
-    
-    if not matches:
-        raise ValueError('No valid (x,y) pairs found')
-    
-    x_data = [float(m[0].strip()) for m in matches]
-    y_data = [float(m[1].strip()) for m in matches]
-    
-    return x_data, y_data, None
-
-
-def parse_separate_xy(text):
-    """Parse separate x: and y: format."""
-    import re
-    
-    # Find x: ... and y: ... sections
-    x_match = re.search(r'x\s*:\s*([^\n]+)', text, re.IGNORECASE)
-    y_match = re.search(r'y\s*:\s*([^\n]+)', text, re.IGNORECASE)
-    
-    if not x_match or not y_match:
-        raise ValueError('Could not find x: and y: sections')
-    
-    x_data = [float(v.strip()) for v in x_match.group(1).split(',')]
-    y_data = [float(v.strip()) for v in y_match.group(1).split(',')]
-    
-    if len(x_data) != len(y_data):
-        raise ValueError(f'X has {len(x_data)} values but Y has {len(y_data)}')
-    
-    return x_data, y_data, None
-```
-
-#### 4.4.2 History Management Functions
-
-```python
-def push_to_history(history, figure_state, max_size=50):
-    """
-    Push current state to undo history.
-    
-    Args:
-        history: Current history dict with 'undo' and 'redo' keys
-        figure_state: Current figure dictionary to save
-        max_size: Maximum history depth
-        
-    Returns:
-        Updated history dictionary
-    """
-    import copy
-    
-    # Deep copy to prevent reference issues
-    state_copy = copy.deepcopy(figure_state)
-    
-    # Get current stacks
-    undo_stack = history.get('undo', [])
-    
-    # Add to undo stack
-    undo_stack.append(state_copy)
-    
-    # Prune if exceeds max size
-    if len(undo_stack) > max_size:
-        undo_stack = undo_stack[-max_size:]
-    
-    # Clear redo stack (standard behavior for new actions)
-    return {
-        'undo': undo_stack,
-        'redo': []
-    }
-
-
-def undo_action(history):
-    """
-    Perform undo operation.
-    
-    Returns:
-        Tuple of (restored_figure, updated_history)
-    """
-    undo_stack = history.get('undo', [])
-    redo_stack = history.get('redo', [])
-    
-    if not undo_stack:
-        return None, history  # Nothing to undo
-    
-    # Pop from undo, push to redo
-    restored = undo_stack.pop()
-    redo_stack.append(restored)
-    
-    # Get previous state (now at top of undo stack)
-    previous = undo_stack[-1] if undo_stack else None
-    
-    return previous, {'undo': undo_stack, 'redo': redo_stack}
-```
-
-#### 4.4.3 Nested Property Access Functions
-
-```python
-def get_nested_value(obj, key_path, default=None):
-    """
-    Get value from nested dictionary using dot notation.
-    
-    Example:
-        get_nested_value({'line': {'color': 'red'}}, 'line.color')
-        → 'red'
-    """
-    keys = key_path.split('.')
-    current = obj
-    
-    for key in keys:
-        if isinstance(current, dict):
-            current = current.get(key, default)
-        else:
-            return default
-        
-        if current is None:
-            return default
-    
-    return current
-
-
-def set_nested_value(obj, key_path, value):
-    """
-    Set value in nested dictionary using dot notation.
-    
-    Example:
-        set_nested_value({}, 'line.color', 'red')
-        → {'line': {'color': 'red'}}
-    """
-    keys = key_path.split('.')
-    current = obj
-    
-    for key in keys[:-1]:
-        if key not in current:
-            current[key] = {}
-        current = current[key]
-    
-    current[keys[-1]] = value
-    return obj
+┌─────────────────────────────────────────────────────────────────────┐
+│ TAB SWITCHING FLOW                                                  │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  User clicks "PLOTS" tab                                            │
+│          │                                                          │
+│          ▼                                                          │
+│  ribbon-tabs.active_tab becomes "tab-plots"                         │
+│          │                                                          │
+│          ▼                                                          │
+│  toggle_ribbon("tab-plots") is called                               │
+│          │                                                          │
+│          ▼                                                          │
+│  Returns: (hide, hide, SHOW, hide, hide)                            │
+│            HOME   DATA  PLOTS ANNOT VIEW                            │
+│          │                                                          │
+│          ▼                                                          │
+│  Only PLOTS content is visible, others are hidden                   │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 5. Complete Feature Documentation
+#### 4.3.3 Data Management Callback - A Complex Multi-Input Example
+
+This is one of the most complex callbacks - it handles CSV upload, demo data generation, deletion, and cleaning:
+
+```python
+# app.py (Lines 1275-1380) - Data Management Callback
+@app.callback(
+    Output("dd-dataframe-select", "options"),      # Update dropdown options
+    Output("dd-dataframe-select", "value"),        # Update selected value
+    Output("data-info-label", "children"),         # Update info text
+    Output("data-update-signal", "data"),          # Signal other callbacks
+    Output("main-graph", "figure", allow_duplicate=True),  # Update plot
+    Input("upload-csv", "contents"),               # CSV upload trigger
+    Input("btn-gen-demo", "n_clicks"),             # Demo data button
+    Input("btn-delete-data", "n_clicks"),          # Delete button
+    Input("btn-clean-na", "n_clicks"),             # Clean NA button
+    State("upload-csv", "filename"),               # Get filename
+    State("dd-dataframe-select", "value"),         # Get current selection
+    State("data-update-signal", "data"),           # Get current signal
+    prevent_initial_call=True
+)
+def manage_data(upload_content, _n_demo, _n_delete, _n_clean, 
+                filename, current_selection, current_signal):
+    """
+    Central data management callback handling multiple operations.
+    Uses ctx.triggered_id to determine which action was triggered.
+    """
+    ctx_id = ctx.triggered_id  # Which component triggered this callback?
+    current_signal = current_signal or 0
+    fig_update = dash.no_update  # Default: don't change the figure
+    
+    # ============= HANDLE CSV UPLOAD =============
+    if ctx_id == "upload-csv" and upload_content:
+        # Decode the uploaded file
+        _content_type, content_string = upload_content.split(',')
+        decoded = base64.b64decode(content_string)
+        
+        try:
+            # Parse CSV into DataFrame
+            df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+            name = filename.split('.')[0]  # Remove .csv extension
+            
+            # Store in FigureStore
+            figure_store.add_dataframe(name, df)
+            current_selection = name  # Auto-select new data
+            current_signal += 1       # Signal update
+            
+        except Exception as e:
+            print(f"Error parsing CSV: {e}")
+    
+    # ============= HANDLE DEMO DATA GENERATION =============
+    if ctx_id == "btn-gen-demo":
+        n_points = 200
+        t = np.linspace(0, 10, n_points)
+        
+        # Create rich dataset for ALL plot types
+        df = pd.DataFrame({
+            "time": t,
+            "signal": np.sin(t) * 10 + np.random.normal(0, 1, n_points),
+            "noise": np.random.randn(n_points),
+            "category": np.random.choice(['A', 'B', 'C', 'D'], n_points),
+            "x_val": np.random.randn(n_points) * 10,
+            "y_val": np.random.randn(n_points) * 10,
+            "z_val": np.random.randn(n_points) * 10,  # For 3D plots
+            "lat": np.random.uniform(-50, 70, n_points),  # For maps
+            "lon": np.random.uniform(-120, 140, n_points),
+            # ... more columns for specialized charts
+        })
+        
+        name = f"demo_{uuid.uuid4().hex[:4]}"
+        figure_store.add_dataframe(name, df)
+        current_selection = name
+        current_signal += 1
+    
+    # ============= HANDLE DELETION =============
+    if ctx_id == "btn-delete-data" and current_selection:
+        # Remove from repository
+        if current_selection in figure_store.data_repository:
+            del figure_store.data_repository[current_selection]
+            
+            # Also remove associated traces
+            keys_to_remove = [k for k, d in figure_store.datasets.items() 
+                            if d.name == current_selection]
+            for k in keys_to_remove:
+                del figure_store.datasets[k]
+            
+            # Rebuild figure without deleted traces
+            figure_store.rebuild_figure_from_datasets()
+            fig_update = figure_store.get_figure_dict()
+            
+            current_selection = None
+            current_signal += 1
+    
+    # ============= HANDLE CLEANING =============
+    if ctx_id == "btn-clean-na" and current_selection:
+        df = figure_store.get_dataframe(current_selection)
+        if df is not None:
+            # Smart cleaning: convert numeric strings, drop NaN
+            for col in df.columns:
+                if df[col].dtype == 'object':
+                    numeric_col = pd.to_numeric(df[col], errors='coerce')
+                    if numeric_col.count() / df[col].count() > 0.5:
+                        df[col] = numeric_col
+            
+            df = df.dropna()
+            figure_store.add_dataframe(current_selection, df)
+            # ... update associated traces ...
+            current_signal += 1
+    
+    # Build dropdown options
+    options = [{"label": k, "value": k} 
+               for k in figure_store.data_repository.keys()]
+    
+    # Build info label
+    info_text = "No data loaded"
+    if current_selection:
+        df = figure_store.get_dataframe(current_selection)
+        if df is not None:
+            info_text = f"{len(df)} rows × {len(df.columns)} cols"
+    
+    return options, current_selection, info_text, current_signal, fig_update
+```
+
+**Visual: How ctx.triggered_id Works**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ MULTI-INPUT CALLBACK WITH ctx.triggered_id                          │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  FOUR DIFFERENT BUTTONS can trigger the same callback:              │
+│                                                                     │
+│  [Upload CSV] ──┐                                                   │
+│  [Load Demo]  ──┼──► manage_data() callback                         │
+│  [Delete]     ──┤                                                   │
+│  [Clean NA]   ──┘                                                   │
+│                      │                                              │
+│                      ▼                                              │
+│              ctx.triggered_id tells us WHICH ONE was clicked:       │
+│                                                                     │
+│              if ctx.triggered_id == "upload-csv":                   │
+│                  → Handle CSV upload                                │
+│              elif ctx.triggered_id == "btn-gen-demo":               │
+│                  → Generate demo data                               │
+│              elif ctx.triggered_id == "btn-delete-data":            │
+│                  → Delete selected data                             │
+│              elif ctx.triggered_id == "btn-clean-na":               │
+│                  → Clean the data                                   │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+> 💡 **Tips:** This pattern is VERY common in Dash apps. Instead of writing 4 separate callbacks, we combine related operations into one and use `ctx.triggered_id` to know which button was clicked!
+
+---
+
+#### 4.3.4 Code Generation Callback - Auto-Generate Plotly Code
+
+This callback generates executable Python code when you click a chart type button:
+
+```python
+# app.py (Lines 1655-1710) - Code Generation
+@app.callback(
+    Output("code-editor", "value"),          # Put code in editor
+    Output("trigger-run-signal", "data"),    # Trigger auto-run
+    Input("btn-plot-scatter", "n_clicks"),
+    Input("btn-plot-line", "n_clicks"),
+    Input("btn-plot-bar", "n_clicks"),
+    # ... 23 more chart type buttons ...
+    Input("btn-plot-globe", "n_clicks"),
+    State("dd-dataframe-select", "value"),
+    State("trigger-run-signal", "data"),
+    prevent_initial_call=True
+)
+def generate_and_trigger_plot(_n_sc, _n_ln, _n_bar, ..., df_name, current_signal):
+    """Generate smart Plotly code based on chart type and data."""
+    if not df_name:
+        return "# Please select a dataset first.", dash.no_update
+        
+    ctx_id = ctx.triggered_id
+    if not ctx_id:
+        raise PreventUpdate
+        
+    # Extract plot type from button ID: "btn-plot-scatter" → "scatter"
+    plot_type = ctx_id.replace("btn-plot-", "")
+    
+    df = figure_store.get_dataframe(df_name)
+    if df is None:
+        return "# Error: Dataset not found.", dash.no_update
+
+    # Use CodeGenerator to create smart code
+    cmd = code_generator.generate_smart_plot_code(df_name, plot_type, df)
+    
+    # Increment signal to trigger auto-execution
+    new_signal = (current_signal or 0) + 1
+    return cmd, new_signal
+```
+
+**What generate_smart_plot_code() Does:**
+
+```python
+# Simplified from CodeGenerator class (Lines 600-750)
+def generate_smart_plot_code(self, df_name, plot_type, df):
+    """Intelligently generate code based on data types."""
+    
+    # Analyze column types
+    num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    cat_cols = df.select_dtypes(include=['object']).columns.tolist()
+    
+    # Smart column selection based on plot type
+    if plot_type == 'scatter':
+        x = num_cols[0] if num_cols else df.columns[0]
+        y = num_cols[1] if len(num_cols) > 1 else num_cols[0]
+        return f"fig = px.scatter({df_name}, x='{x}', y='{y}')"
+        
+    elif plot_type == 'pie':
+        names = cat_cols[0] if cat_cols else df.columns[0]
+        values = num_cols[0] if num_cols else df.columns[1]
+        return f"fig = px.pie({df_name}, names='{names}', values='{values}')"
+        
+    elif plot_type == 'scatter3d':
+        x, y, z = num_cols[0], num_cols[1], num_cols[2]
+        return f"fig = px.scatter_3d({df_name}, x='{x}', y='{y}', z='{z}')"
+        
+    # ... more plot types ...
+```
+
+**How Code Generation + Auto-Execution Works:**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ CODE GENERATION + AUTO-EXECUTION FLOW                               │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  1. User clicks [Scatter] button                                    │
+│          │                                                          │
+│          ▼                                                          │
+│  2. generate_and_trigger_plot() runs                                │
+│     → Generates: "fig = px.scatter(demo, x='x_val', y='y_val')"    │
+│     → Returns: (code, signal+1)                                     │
+│          │                                                          │
+│          ▼                                                          │
+│  3. Code appears in Command Window (code-editor)                    │
+│  4. trigger-run-signal changes value                                │
+│          │                                                          │
+│          ▼                                                          │
+│  5. execute_code() callback triggers (it listens to signal)         │
+│     → exec(code, {}, local_scope)                                   │
+│     → fig variable is created                                       │
+│     → Updates main-graph with new figure                            │
+│          │                                                          │
+│          ▼                                                          │
+│  6. Chart appears on canvas! ✨                                     │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 4.3.5 Code Execution Callback - Running User Code
+
+This callback safely executes Python code from the Command Window:
+
+```python
+# app.py (Lines 1715-1760) - Code Execution
+@app.callback(
+    Output("main-graph", "figure"),
+    Output("console-output", "children"),
+    Input("trigger-run-signal", "data"),        # Auto-run trigger
+    Input("btn-run-custom-code", "n_clicks"),   # Manual run button
+    State("code-editor", "value"),
+    State("console-output", "children"),
+    prevent_initial_call=True
+)
+def execute_code(signal, n_clicks, code, current_console):
+    """Execute code from the command window."""
+    if not code:
+        raise PreventUpdate
+
+    try:
+        # Create a safe execution environment
+        local_scope = {
+            "pd": pd,              # Pandas
+            "px": px,              # Plotly Express
+            "go": go,              # Graph Objects
+            "np": np,              # NumPy
+            "figure_store": figure_store  # Access to data
+        }
+        
+        # Inject all loaded dataframes into scope
+        for name, df in figure_store.data_repository.items():
+            local_scope[name] = df   # demo_abc → actual DataFrame
+            
+        # EXECUTE THE CODE
+        exec(code, {}, local_scope)
+        
+        # Check if 'fig' variable was created
+        if "fig" in local_scope:
+            fig = local_scope["fig"]
+            if isinstance(fig, go.Figure):
+                figure_store.update_figure(fig)
+                return fig, f"{current_console}\n>>> Code executed successfully."
+            else:
+                return dash.no_update, f"{current_console}\n>>> Error: 'fig' is not a Figure."
+        else:
+            return dash.no_update, f"{current_console}\n>>> Code ran, but no 'fig' found."
+            
+    except Exception as e:
+        return dash.no_update, f"{current_console}\n>>> Execution Error: {e}"
+```
+
+**Security Note:**
+
+> ⚠️ **Important:** Using `exec()` to run user code is powerful but can be dangerous in production. Our app is designed for single-user local use, so this is acceptable. For a public web app, you'd need sandboxing!
+
+---
+
+#### 4.3.6 Property Editor Callback - The "Big One" (35+ Properties)
+
+This is the largest callback in the app - it handles editing ANY property of ANY element:
+
+```python
+# app.py (Lines 1770-1900) - Property Editor (Simplified)
+@app.callback(
+    Output("main-graph", "figure", allow_duplicate=True),
+    Input("btn-apply-props", "n_clicks"),
+    State("dd-element-select", "value"),           # Which element?
+    State("input-prop-name", "value"),             # Name/Title
+    State("input-prop-color", "value"),            # Color
+    State("input-prop-size", "value"),             # Size
+    State("input-prop-opacity", "value"),          # Opacity
+    State("input-prop-symbol", "value"),           # Symbol
+    State("input-prop-width", "value"),            # Line Width
+    State("input-prop-dash", "value"),             # Line Dash
+    # ... 25+ more State inputs ...
+    State("input-prop-global_font_size", "value"), # Global Font Size
+    State("main-graph", "figure"),
+    prevent_initial_call=True
+)
+def apply_property_changes(n_clicks, selected_element, name, color, size, 
+                           opacity, symbol, width, dash_style, ...):
+    """Apply property changes to the selected element."""
+    if not n_clicks or not selected_element:
+        raise PreventUpdate
+        
+    fig = go.Figure(fig_dict)
+    
+    # Collect all non-None property values
+    props = {}
+    if name: props['name'] = name
+    if color: props['color'] = color
+    if size: props['size'] = size
+    # ... collect all properties ...
+    
+    if not props:
+        return dash.no_update
+
+    # Apply based on element type
+    if selected_element == "figure":
+        # Update layout properties (title, axes, theme, etc.)
+        layout_updates = {}
+        if 'name' in props: 
+            layout_updates['title'] = dict(text=props['name'])
+        if 'template' in props: 
+            layout_updates['template'] = props['template']
+        # ... more layout updates ...
+        fig.update_layout(**layout_updates)
+        fig.update_xaxes(**xaxis_opts)
+        fig.update_yaxes(**yaxis_opts)
+
+    elif selected_element.startswith("trace_"):
+        # Update trace properties (color, size, marker, line, etc.)
+        idx = int(selected_element.split("_")[1])
+        trace = fig.data[idx]
+        
+        marker_updates = {}
+        if 'color' in props: marker_updates['color'] = props['color']
+        if 'size' in props: marker_updates['size'] = props['size']
+        if marker_updates: 
+            trace.update(marker=marker_updates)
+            
+        line_updates = {}
+        if 'width' in props: line_updates['width'] = props['width']
+        if line_updates:
+            trace.update(line=line_updates)
+
+    elif selected_element.startswith("annot_"):
+        # Update annotation properties
+        idx = int(selected_element.split("_")[1])
+        annot = fig.layout.annotations[idx]
+        annot.update(text=props.get('text'), font=dict(color=props.get('color')))
+        
+    elif selected_element.startswith("shape_"):
+        # Update shape properties
+        idx = int(selected_element.split("_")[1])
+        shape = fig.layout.shapes[idx]
+        shape.update(line=dict(color=props.get('color'), width=props.get('width')))
+
+    figure_store.update_figure(fig)
+    return fig
+```
+
+**Property Application Logic:**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ PROPERTY EDITOR FLOW                                                │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  User selects "trace_0" → Changes Color to "red" → Clicks [Apply]   │
+│                                                                     │
+│  ┌─────────────────────────────────────────┐                       │
+│  │ 1. selected_element = "trace_0"         │                       │
+│  │ 2. props = {'color': 'red'}             │                       │
+│  │ 3. Extract index: idx = 0               │                       │
+│  │ 4. Get trace: trace = fig.data[0]       │                       │
+│  │ 5. Apply: trace.update(marker={'color': 'red'})                 │
+│  │ 6. Also: trace.update(line={'color': 'red'})                    │
+│  │ 7. Return updated figure                 │                       │
+│  └─────────────────────────────────────────┘                       │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 4.3.7 History (Undo/Redo) Callback
+
+```python
+# app.py (Lines 2525-2565) - History Management
+@app.callback(
+    Output("main-graph", "figure", allow_duplicate=True),
+    Output("btn-undo", "disabled"),            # Disable when empty
+    Output("btn-redo", "disabled"),
+    Input("btn-undo", "n_clicks"),
+    Input("btn-redo", "n_clicks"),
+    Input("main-graph", "figure"),             # Listen for changes
+    State("main-graph", "figure"),
+    prevent_initial_call=True
+)
+def manage_history(n_undo, n_redo, fig_trigger, current_fig_dict):
+    ctx_id = ctx.triggered_id
+    
+    # If triggered by graph update, just update button states
+    if ctx_id == "main-graph":
+        return (dash.no_update, 
+                not history_stack.can_undo(),  # Disable if can't undo
+                not history_stack.can_redo())  # Disable if can't redo
+        
+    # Handle Undo
+    if ctx_id == "btn-undo":
+        new_fig = history_stack.undo()
+        if new_fig:
+            fig = go.Figure(new_fig)
+            figure_store.update_figure(fig)
+            return fig, not history_stack.can_undo(), not history_stack.can_redo()
+    
+    # Handle Redo
+    elif ctx_id == "btn-redo":
+        new_fig = history_stack.redo()
+        if new_fig:
+            fig = go.Figure(new_fig)
+            figure_store.update_figure(fig)
+            return fig, not history_stack.can_undo(), not history_stack.can_redo()
+        
+    return dash.no_update, not history_stack.can_undo(), not history_stack.can_redo()
+```
+
+**Undo/Redo Stack Visualization:**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ HISTORY STACK VISUALIZATION                                         │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Initial State:                                                     │
+│  UNDO: []                    REDO: []                               │
+│                                                                     │
+│  After Adding Scatter:                                              │
+│  UNDO: [state_0]             REDO: []                               │
+│                                                                     │
+│  After Changing Color:                                              │
+│  UNDO: [state_0, state_1]    REDO: []                               │
+│                                                                     │
+│  After Clicking UNDO:                                               │
+│  UNDO: [state_0]             REDO: [state_1]                        │
+│  (Restored to state_1, color change undone)                         │
+│                                                                     │
+│  After Clicking REDO:                                               │
+│  UNDO: [state_0, state_1]    REDO: []                               │
+│  (Back to state with color change)                                  │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+> 💡 **Tips:** The undo/redo system saves a complete copy of the figure before each change. This is memory-intensive but very reliable!
+
+### 4.4 Helper Functions - The "Utility Belt"
+
+> 💡 **Tips:** Helper functions are like tools in Batman's utility belt - they're not the main show, but the hero couldn't do their job without them!
+
+Several utility functions support the callback logic. Let's examine the key ones from `app.py`:
+
+#### 4.4.1 The clean_figure_dict() Function - Data Sanitizer
+
+One of the most important helper functions ensures figure data is clean before processing:
+
+```python
+# app.py (Lines 800-850) - Figure Cleaning
+def clean_figure_dict(fig_dict):
+    """
+    Clean a figure dictionary to remove problematic values.
+    
+    Why this is needed:
+    - Dash sometimes passes weird values (like undefined JavaScript objects)
+    - NumPy arrays need to be converted to lists for JSON serialization
+    - NaN values cause problems and should be filtered
+    """
+    if fig_dict is None:
+        return None
+        
+    import copy
+    cleaned = copy.deepcopy(fig_dict)  # Don't modify original!
+    
+    def clean_value(v):
+        """Recursively clean a value."""
+        if isinstance(v, dict):
+            return {k: clean_value(val) for k, val in v.items() 
+                   if val is not None}
+        elif isinstance(v, list):
+            return [clean_value(item) for item in v 
+                   if item is not None]
+        elif isinstance(v, (np.ndarray,)):
+            return v.tolist()  # Convert NumPy to list
+        elif isinstance(v, (np.floating, np.integer)):
+            return float(v) if np.isfinite(v) else None
+        else:
+            return v
+    
+    return clean_value(cleaned)
+```
+
+**Why clean_figure_dict() is Critical:**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ WITHOUT clean_figure_dict():                                        │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  fig_dict = {                                                       │
+│      'data': [{                                                     │
+│          'x': np.array([1, 2, 3]),    ← NumPy array (can't JSON)   │
+│          'y': [1, np.nan, 3],         ← NaN value (causes errors)  │
+│      }],                                                            │
+│      'layout': {                                                    │
+│          'undefined_property': undefined  ← From JavaScript        │
+│      }                                                              │
+│  }                                                                  │
+│                                                                     │
+│  json.dumps(fig_dict)  → ERROR! ❌                                  │
+│                                                                     │
+├─────────────────────────────────────────────────────────────────────┤
+│ WITH clean_figure_dict():                                           │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  cleaned = {                                                        │
+│      'data': [{                                                     │
+│          'x': [1, 2, 3],              ← Now a Python list ✓        │
+│          'y': [1, 3],                 ← NaN removed ✓              │
+│      }],                                                            │
+│      'layout': {}                      ← Undefined removed ✓       │
+│  }                                                                  │
+│                                                                     │
+│  json.dumps(cleaned)  → Works! ✓                                    │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 4.4.2 The create_initial_figure() Function - Default Canvas
+
+This function creates the initial empty figure when the app starts:
+
+```python
+# app.py (Lines 855-880) - Initial Figure
+def create_initial_figure():
+    """
+    Create the initial empty figure shown when app loads.
+    Sets up a professional-looking blank canvas.
+    """
+    fig = go.Figure()
+    
+    fig.update_layout(
+        title=dict(
+            text="Interactive Figure Editor",
+            font=dict(size=20, color="#333")
+        ),
+        xaxis=dict(
+            title="X Axis",
+            showgrid=True,
+            gridcolor='lightgray'
+        ),
+        yaxis=dict(
+            title="Y Axis", 
+            showgrid=True,
+            gridcolor='lightgray'
+        ),
+        template="plotly_white",
+        showlegend=True,
+        margin=dict(l=60, r=40, t=60, b=40),
+        paper_bgcolor='white',
+        plot_bgcolor='white'
+    )
+    
+    return fig
+```
+
+---
+
+#### 4.4.3 Data Parsing Functions - Understanding User Input
+
+The CodeGenerator class includes smart data analysis:
+
+```python
+# From CodeGenerator class (Lines 650-750)
+def generate_smart_plot_code(self, df_name, plot_type, df):
+    """
+    Intelligently generate plotting code by analyzing data types.
+    
+    This is 'smart' because it:
+    1. Detects numeric vs categorical columns
+    2. Chooses appropriate columns for each plot type
+    3. Handles edge cases (missing columns, wrong types)
+    """
+    # Detect column types
+    num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    cat_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+    date_cols = df.select_dtypes(include=['datetime']).columns.tolist()
+    
+    # Smart column mapping based on plot type
+    column_mapping = {
+        'scatter':    {'x': num_cols[0], 'y': num_cols[1] if len(num_cols) > 1 else num_cols[0]},
+        'line':       {'x': date_cols[0] if date_cols else num_cols[0], 'y': num_cols[0]},
+        'bar':        {'x': cat_cols[0] if cat_cols else num_cols[0], 'y': num_cols[0]},
+        'pie':        {'names': cat_cols[0] if cat_cols else 'category', 'values': num_cols[0]},
+        'histogram':  {'x': num_cols[0]},
+        'box':        {'x': cat_cols[0] if cat_cols else None, 'y': num_cols[0]},
+        'heatmap':    {'x': num_cols[0], 'y': num_cols[1], 'z': num_cols[2] if len(num_cols) > 2 else num_cols[0]},
+        'scatter3d':  {'x': num_cols[0], 'y': num_cols[1], 'z': num_cols[2]},
+        'scattergeo': {'lat': 'lat', 'lon': 'lon'},
+        # ... more mappings
+    }
+    
+    # Generate appropriate code
+    mapping = column_mapping.get(plot_type, {})
+    
+    if plot_type == 'scatter':
+        return f"fig = px.scatter({df_name}, x='{mapping['x']}', y='{mapping['y']}')"
+    elif plot_type == 'pie':
+        return f"fig = px.pie({df_name}, names='{mapping['names']}', values='{mapping['values']}')"
+    # ... etc
+```
+
+**Smart Column Detection Example:**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ SMART COLUMN DETECTION                                              │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  DataFrame:                                                         │
+│  ┌────────────┬────────┬──────────┬───────────┐                    │
+│  │ date       │ sales  │ category │ profit    │                    │
+│  ├────────────┼────────┼──────────┼───────────┤                    │
+│  │ 2024-01-01 │ 100    │ "A"      │ 10.5      │                    │
+│  │ 2024-01-02 │ 150    │ "B"      │ 15.2      │                    │
+│  └────────────┴────────┴──────────┴───────────┘                    │
+│                                                                     │
+│  Analysis:                                                          │
+│  • num_cols  = ['sales', 'profit']                                  │
+│  • cat_cols  = ['category']                                         │
+│  • date_cols = ['date']                                             │
+│                                                                     │
+│  For "scatter" plot:                                                │
+│  → x = 'sales' (first numeric)                                      │
+│  → y = 'profit' (second numeric)                                    │
+│  → Code: fig = px.scatter(df, x='sales', y='profit')               │
+│                                                                     │
+│  For "bar" plot:                                                    │
+│  → x = 'category' (first categorical)                               │
+│  → y = 'sales' (first numeric)                                      │
+│  → Code: fig = px.bar(df, x='category', y='sales')                 │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+> 💡 **Tips:** This is why clicking "Scatter" with demo data just WORKS - the code generator is smart enough to find the right columns!
+
+---
+
+#### 4.4.4 Inspector Control Generation - Dynamic UI Building
+
+The `update_inspector_controls` callback generates different UI controls based on context:
+
+```python
+# From update_inspector_controls callback (Lines 2085-2300)
+def make_row(label, id_suffix, input_type="text", value=None, options=None, visible=True):
+    """
+    Helper to create a property control row.
+    
+    Parameters:
+    - label: Display name (e.g., "Color")
+    - id_suffix: ID suffix (e.g., "color" → "input-prop-color")
+    - input_type: "text", "number", or "select"
+    - value: Current value to display
+    - options: For select type, list of options
+    - visible: Whether to show this row
+    """
+    style = {} if visible else {"display": "none"}
+    
+    if input_type == "select" and options:
+        # Create dropdown
+        input_component = dbc.Select(
+            id=f"input-prop-{id_suffix}",
+            options=[{"label": o.title(), "value": o} for o in options]
+                   if isinstance(options[0], str) else options,
+            value=value,
+            size="sm"
+        )
+    else:
+        # Create text/number input
+        input_component = dbc.Input(
+            id=f"input-prop-{id_suffix}",
+            type=input_type,
+            value=value,
+            size="sm"
+        )
+
+    return dbc.Row([
+        dbc.Col(dbc.Label(label, className="small mb-0"), width=4),
+        dbc.Col(input_component, width=8)
+    ], className="mb-2", style=style)
+```
+
+**Property Configuration Dictionary (Actual Code):**
+
+```python
+# The config dict defines ALL possible properties
+config = {
+    "name":    {"visible": False, "label": "Name", "value": None, "type": "text"},
+    "color":   {"visible": False, "label": "Color", "value": None, "type": "select", 
+                "options": ['black', 'white', 'red', 'green', 'blue', ...]},
+    "size":    {"visible": False, "label": "Size", "value": None, "type": "number"},
+    "opacity": {"visible": False, "label": "Opacity", "value": None, "type": "number"},
+    "symbol":  {"visible": False, "label": "Symbol", "value": None, "type": "select",
+                "options": ['circle', 'square', 'diamond', 'cross', 'x', ...]},
+    "width":   {"visible": False, "label": "Width", "value": None, "type": "number"},
+    "dash":    {"visible": False, "label": "Dash", "value": None, "type": "select",
+                "options": ['solid', 'dot', 'dash', 'longdash', 'dashdot']},
+    # ... 25+ more properties
+}
+
+# Then based on selected element, enable relevant properties:
+if selected_element == "figure":
+    config["name"].update({"visible": True, "label": "Title"})
+    config["template"].update({"visible": True})
+    config["xaxis"].update({"visible": True})
+    # ... etc
+
+elif selected_element.startswith("trace_"):
+    config["name"].update({"visible": True})
+    config["color"].update({"visible": True})
+    config["size"].update({"visible": True})
+    config["opacity"].update({"visible": True})
+    # ... etc
+```
+
+---
+
+#### 4.4.5 Application Launch - The Final Piece
+
+```python
+# app.py (Lines 2650-2677) - Launch Code
+if __name__ == '__main__':
+    print("\n" + "="*72)
+    print("🚀 Python Interactive Figure Editor - Starting...")
+    print("="*72)
+    print("📍 URL: http://localhost:8051")
+    print("💡 Tip: Use Ctrl+Click to open in browser")
+    print("⚡ Feature Highlights:")
+    print("   - Dash-powered canvas with MATLAB-style figure editing")
+    print("   - Drawing tools (line/rect/circle/freehand) + undo/redo stack")
+    print("   - Trace styling, theme presets, and live property inspector")
+    print("   - Lasso statistics & outlier removal from datasets")
+    print("   - Hybrid canvas: overlay images with adjustable opacity")
+    print("   - Layer manager with visibility toggles and summaries")
+    print("   - Code generator + session export/restore + PNG output")
+    print("="*72 + "\n")
+    
+    app.run(debug=True, jupyter_mode='inline', port=8051)
+```
+
+**What app.run() Parameters Mean:**
+
+| Parameter | Value | Purpose |
+|-----------|-------|---------|
+| `debug=True` | Boolean | Enables auto-reload on code changes, shows detailed errors |
+| `jupyter_mode='inline'` | String | Runs inline when in Jupyter, opens browser otherwise |
+| `port=8051` | Integer | Which port to run on (default is 8050) |
+
+---
+
+### 4.5 Complete Callback Reference Table
+
+Here's a comprehensive table of ALL callbacks in `app.py`:
+
+| Callback Name | Lines | Inputs | Outputs | Purpose |
+|--------------|-------|--------|---------|---------|
+| `toggle_ribbon` | 1235-1250 | ribbon-tabs.active_tab | 5 ribbon content styles | Switch ribbon tabs |
+| `toggle_workspace` | 1255-1265 | workspace-tabs.active_tab | 2 workspace content styles | Switch workspace tabs |
+| `toggle_inspector` | 1270-1275 | chk-inspector-toggle.value | col-inspector.style | Show/hide inspector |
+| `manage_data` | 1280-1380 | 4 data buttons + upload | dropdown, info, signal, figure | Central data management |
+| `update_data_view` | 1385-1430 | dropdown, 3 view buttons, signal | table, active_tab | Show data table/stats |
+| `sync_data_from_table` | 1435-1480 | interactive-data-table.data | console, figure | Sync edits back |
+| `remove_selected_points` | 1485-1580 | btn-remove-selected | figure, selectedData, console | Delete selected points |
+| `generate_and_trigger_plot` | 1655-1710 | 26 plot buttons | code-editor, signal | Generate plot code |
+| `execute_code` | 1715-1760 | signal, run button | figure, console | Run user code |
+| `apply_property_changes` | 1770-1900 | apply button + 35 states | figure | Edit element properties |
+| `delete_element` | 2000-2030 | delete button | figure, element-select | Delete element |
+| `highlight_element` | 2035-2080 | highlight button, dropdown | figure | Highlight selected |
+| `update_element_options` | 2085-2115 | main-graph.figure | dd-element-select.options | Update element list |
+| `update_inspector_controls` | 2120-2300 | dd-element-select | inspector-controls | Generate property UI |
+| `set_shape_draw_mode` | 2305-2350 | 5 draw buttons | figure | Enable drawing tools |
+| `sync_drawn_shapes` | 2400-2430 | relayoutData | figure-store, figure | Save drawn shapes |
+| `toggle_about_modal` | 2435-2445 | open/close buttons | modal.is_open | Show/hide about |
+| `toggle_annot_modal` | 2450-2460 | add-text/confirm buttons | modal.is_open | Show/hide annotation modal |
+| `add_text_annotation` | 2465-2500 | confirm button + states | figure | Add text annotation |
+| `add_background_image` | 2510-2540 | upload-image.contents | figure | Add image overlay |
+| `manage_history` | 2545-2590 | undo/redo buttons, figure | figure, button states | Undo/redo system |
+| `save_session` | 2595-2605 | save button | download-component | Export to JSON |
+| `load_session` | 2610-2630 | upload-session.contents | figure | Import from JSON |
+| `view_tools` | 2635-2660 | zoom/pan/reset buttons | figure | Navigation tools |
+| `show_selection_stats` | 2665-2690 | selectedData | console | Show stats on selection |
+
+**Total: 24 callbacks managing 50+ component interactions!**
+
+> 💡 **Tips:** Don't try to memorize all these! Use this table as a reference when you want to understand or modify a specific feature.
+
+---
+
+## 5. Complete Feature Documentation - Your User Manual
+
+> 💡 **Tips:** This chapter is your **complete user manual**! It explains every feature in PyFigureEditor with step-by-step instructions. Keep this section bookmarked - you'll refer to it often!
 
 This chapter provides comprehensive documentation of all features available in PyFigureEditor, organized by functional category. Each feature includes usage instructions, supported options, and practical examples.
 
-### 5.1 Plot Types and Chart Creation
+### 5.1 Plot Types and Chart Creation - Your 26+ Chart Arsenal
 
-PyFigureEditor supports **26+ plot types**, covering virtually every common visualization need.
+> 💡 **Tips:** One of the biggest advantages of this app is that you don't need to memorize Plotly syntax for each chart type. Just click a button and the code is generated for you!
 
-#### 5.1.1 Basic Charts
+PyFigureEditor supports **26+ plot types**, covering virtually every common visualization need. Let's explore them category by category:
 
-| Plot Type | Description | Best Use Cases |
-|-----------|-------------|----------------|
-| **Scatter** | Points plotted at x,y coordinates | Correlation analysis, point distributions |
-| **Line** | Connected points showing trends | Time series, continuous data |
-| **Bar** | Vertical bars for categorical data | Comparisons, rankings |
-| **Horizontal Bar** | Horizontal bars | Long category names, rankings |
-| **Area** | Filled line chart | Cumulative totals, proportions over time |
+#### 5.1.1 Basic 2D Charts - Where Most Analysis Starts
 
-**Creating a Scatter Plot:**
+**Overview Table:**
 
-```
-Step 1: Select "Scatter" from Plot Type dropdown
-Step 2: Enter data in the input area:
-        Format: (1, 2), (3, 4), (5, 6), (7, 8)
-Step 3: Click "Add to Plot"
-Step 4: Customize using Property Inspector:
-        - Marker Size: 10
-        - Marker Color: #FF6B6B
-        - Marker Symbol: circle
-```
+| Plot Type | Button | Best For | Minimum Data Needed |
+|-----------|--------|----------|---------------------|
+| **Scatter** | `[Scatter]` | Correlation, clusters | 2 numeric columns |
+| **Line** | `[Line]` | Trends, time series | 2 numeric columns |
+| **Bar** | `[Bar]` | Comparisons | 1 categorical + 1 numeric |
+| **Area** | `[Area]` | Cumulative totals | 2 numeric columns |
+| **Bubble** | `[Bubble]` | 3-variable scatter | 3 numeric columns |
 
-**Creating a Line Chart:**
+**Step-by-Step: Creating Your First Scatter Plot**
 
 ```
-Step 1: Select "Line" from Plot Type dropdown
-Step 2: Enter data:
-        x: 0, 1, 2, 3, 4, 5
-        y: 0, 1, 4, 9, 16, 25
-Step 3: Click "Add to Plot"
-Step 4: Customize:
-        - Line Width: 3
-        - Line Color: #4ECDC4
-        - Line Style: solid
+┌─────────────────────────────────────────────────────────────────────┐
+│ CREATING A SCATTER PLOT                                             │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Step 1: Load Data                                                  │
+│  ┌─────────────────────────────────────────┐                       │
+│  │ Click [Load Demo] OR [Import CSV]       │                       │
+│  │ Wait for "200 rows × 15 cols" message   │                       │
+│  └─────────────────────────────────────────┘                       │
+│                                                                     │
+│  Step 2: Select Chart Type                                          │
+│  ┌─────────────────────────────────────────┐                       │
+│  │ Go to PLOTS tab                         │                       │
+│  │ Click [Scatter] button                  │                       │
+│  └─────────────────────────────────────────┘                       │
+│                                                                     │
+│  Step 3: Watch the Magic!                                           │
+│  ┌─────────────────────────────────────────┐                       │
+│  │ Code appears in Command Window:         │                       │
+│  │ fig = px.scatter(demo_xxxx, x='x_val',  │                       │
+│  │                  y='y_val')             │                       │
+│  │                                          │                       │
+│  │ Chart appears on canvas automatically!  │                       │
+│  └─────────────────────────────────────────┘                       │
+│                                                                     │
+│  Step 4: Customize (Optional)                                       │
+│  ┌─────────────────────────────────────────┐                       │
+│  │ Select "Trace 0" in Property Inspector  │                       │
+│  │ Change Color → red                      │                       │
+│  │ Change Size → 12                        │                       │
+│  │ Click [Apply Changes]                   │                       │
+│  └─────────────────────────────────────────┘                       │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-#### 5.1.2 Statistical Charts
+**Pro Tip for Line Charts:**
 
-| Plot Type | Description | Data Requirements |
-|-----------|-------------|-------------------|
-| **Histogram** | Distribution of single variable | Single array of values |
-| **Box Plot** | Statistical summary (quartiles) | One or more data arrays |
-| **Violin Plot** | Distribution shape + statistics | One or more data arrays |
-| **Heatmap** | 2D color-coded matrix | 2D array (matrix) |
+```python
+# The app auto-generates this when you click [Line]:
+fig = px.line(demo_data, x='time', y='signal')
+
+# But you can modify it in Command Window to add features:
+fig = px.line(demo_data, x='time', y='signal', 
+              color='category',           # Different colors per category
+              markers=True,               # Add dots at data points
+              title='My Time Series')     # Add title
+```
+
+---
+
+#### 5.1.2 Statistical Charts - For Data Scientists
+
+> 💡 **Tips:** These charts help you understand the **distribution** and **statistical properties** of your data. They're essential for exploratory data analysis!
+
+**Overview Table:**
+
+| Plot Type | Button | What It Shows | When to Use |
+|-----------|--------|---------------|-------------|
+| **Histogram** | `[Hist]` | Distribution shape | "How are my values spread out?" |
+| **Box Plot** | `[Box]` | Quartiles, outliers | "What are the median and outliers?" |
+| **Violin** | `[Violin]` | Distribution + density | "What's the full shape of my data?" |
+| **Heatmap** | `[Heatmap]` | 2D correlations | "How do variables relate?" |
+
+**Understanding Box Plots - A Visual Guide:**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ ANATOMY OF A BOX PLOT                                               │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│         ●  ← Outlier (> 1.5 × IQR above Q3)                        │
+│                                                                     │
+│       ─┬─  ← Maximum (excluding outliers)                          │
+│        │                                                            │
+│        │   Upper Whisker                                            │
+│        │                                                            │
+│       ┌┴┐                                                           │
+│       │ │  ← Q3 (75th percentile)                                  │
+│       │ │                                                           │
+│       │━│  ← Median (50th percentile)                              │
+│       │ │                                                           │
+│       │ │  ← Q1 (25th percentile)                                  │
+│       └┬┘                                                           │
+│        │                                                            │
+│        │   Lower Whisker                                            │
+│        │                                                            │
+│       ─┴─  ← Minimum (excluding outliers)                          │
+│                                                                     │
+│         ●  ← Outlier (< 1.5 × IQR below Q1)                        │
+│                                                                     │
+│  IQR = Interquartile Range = Q3 - Q1                               │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
 **Creating a Box Plot:**
 
 ```
-Step 1: Select "Box" from Plot Type dropdown
-Step 2: Enter multiple data series:
-        Series 1: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
-        Series 2: 2, 4, 6, 8, 10, 12, 14, 16
-Step 3: Click "Add to Plot" for each series
-Step 4: Customize:
-        - Box Fill Color
-        - Whisker Width
-        - Show/Hide Points
+1. Load your data (demo or CSV)
+2. Go to PLOTS tab → Click [Box]
+3. Generated code: fig = px.box(demo_data, x='category', y='signal')
+4. The chart automatically groups data by category!
+
+To customize:
+- Select "Figure Settings" → Change Theme to "plotly_white"
+- The box plot now has a cleaner background
 ```
 
-#### 5.1.3 3D Charts
+---
 
-| Plot Type | Description | Data Requirements |
-|-----------|-------------|-------------------|
-| **3D Scatter** | Points in 3D space | x, y, z arrays |
-| **3D Surface** | Continuous surface | 2D z matrix |
-| **3D Mesh** | Triangulated surface | x, y, z + i, j, k indices |
-| **3D Line** | Line in 3D space | x, y, z arrays |
+#### 5.1.3 3D Charts - When Two Dimensions Aren't Enough
 
-**Creating a 3D Surface:**
+> 💡 **Tips:** 3D charts are powerful but can be misleading if overused. Use them when your data truly has three important dimensions!
+
+**Overview Table:**
+
+| Plot Type | Button | Data Needed | Interactive Features |
+|-----------|--------|-------------|---------------------|
+| **3D Scatter** | `[3D Scatter]` | x, y, z columns | Rotate, zoom, pan |
+| **3D Line** | `[Line 3D]` | x, y, z columns | Trace paths in 3D |
+| **Surface** | `[Surface]` | z matrix (2D array) | Explore terrain-like data |
+| **Contour** | `[Contour]` | z matrix | Like Surface but flat |
+
+**Creating a 3D Scatter Plot:**
+
+```
+1. Load demo data (it has x_val, y_val, z_val columns)
+2. Click [3D Scatter]
+3. Generated code: 
+   fig = px.scatter_3d(demo_data, x='x_val', y='y_val', z='z_val')
+4. Interact with the plot:
+   - Click + drag to rotate
+   - Scroll to zoom
+   - Shift + drag to pan
+```
+
+**Creating a Surface Plot (More Advanced):**
 
 ```python
-# Data format for 3D Surface:
-# z values as 2D array, or generated from function
+# The app generates this, but you can customize:
+fig = go.Figure(data=[go.Surface(
+    z=demo_data[['x_val', 'y_val', 'z_val']].values,
+    colorscale='Viridis'
+)])
 
-# Example: z = sin(x) * cos(y)
+# Or create your own mathematical surface:
+import numpy as np
 x = np.linspace(-5, 5, 50)
 y = np.linspace(-5, 5, 50)
 X, Y = np.meshgrid(x, y)
-Z = np.sin(X) * np.cos(Y)
+Z = np.sin(np.sqrt(X**2 + Y**2))
 
-# Input the Z matrix in the data input area
+fig = go.Figure(data=[go.Surface(z=Z, x=x, y=y)])
 ```
 
-#### 5.1.4 Specialized Charts
+---
 
-| Plot Type | Description | Use Cases |
-|-----------|-------------|-----------|
-| **Pie** | Proportional segments | Market share, budgets |
-| **Donut** | Pie with center hole | Same as pie, modern look |
-| **Funnel** | Progressive stages | Sales pipeline, conversion |
-| **Waterfall** | Incremental changes | Financial analysis |
-| **Candlestick** | OHLC financial data | Stock price analysis |
-| **OHLC** | Open-High-Low-Close | Financial data |
-| **Treemap** | Hierarchical rectangles | File sizes, organizational data |
-| **Sunburst** | Hierarchical radial | Organizational hierarchy |
+#### 5.1.4 Specialized Charts - For Specific Use Cases
 
-#### 5.1.5 Geographic Charts
+> 💡 **Tips:** These charts solve specific visualization problems. You might not use them every day, but when you need them, they're incredibly useful!
 
-| Plot Type | Description | Data Requirements |
-|-----------|-------------|-------------------|
-| **Scatter Geo** | Points on world map | lat, lon coordinates |
-| **Choropleth** | Colored regions | Region codes + values |
-| **Scatter Mapbox** | Points on Mapbox map | lat, lon + Mapbox token |
+**Chart-by-Chart Guide:**
 
-### 5.2 Property Editing System
+| Chart | Button | Use Case | Example |
+|-------|--------|----------|---------|
+| **Pie** | `[Pie]` | Show proportions | Market share |
+| **Sunburst** | `[Sunburst]` | Hierarchical proportions | Org chart + sizes |
+| **Treemap** | `[Treemap]` | Nested categories | File sizes |
+| **Funnel** | `[Funnel]` | Sequential stages | Sales pipeline |
+| **Waterfall** | `[Waterfall]` | Cumulative changes | Financial P&L |
+| **Candlestick** | `[Candle]` | Stock OHLC data | Stock prices |
+| **Polar** | `[Polar]` | Circular/angular data | Wind direction |
+| **Ternary** | `[Ternary]` | 3-way compositions | Chemical mixtures |
+
+**Creating a Pie Chart:**
+
+```
+1. Load demo data (has 'category' column)
+2. Click [Pie]
+3. Generated code: 
+   fig = px.pie(demo_data, names='category', 
+                values='signal')
+4. The pie chart shows distribution across categories!
+
+Pro tip: For donut chart, modify in Command Window:
+fig.update_traces(hole=0.4)  # Adds center hole
+```
+
+**Understanding Financial Charts (Candlestick):**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ CANDLESTICK ANATOMY                                                 │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  GREEN (Up Day)          RED (Down Day)                             │
+│                                                                     │
+│       │ High                   │ High                               │
+│       │                        │                                    │
+│     ┌─┴─┐ Close             ┌─┴─┐ Open                             │
+│     │   │                    │   │                                  │
+│     │   │ Body               │   │ Body                             │
+│     │   │                    │   │                                  │
+│     └─┬─┘ Open              └─┬─┘ Close                            │
+│       │                        │                                    │
+│       │ Low                    │ Low                                │
+│                                                                     │
+│  Demo data includes: open, high, low, close columns               │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 5.1.5 Geographic Charts - Map Your Data
+
+> 💡 **Tips:** Geographic visualization is a huge field. Our app supports basic mapping, which is often enough for most analysis needs!
+
+**Overview Table:**
+
+| Chart | Button | Data Needed | Best For |
+|-------|--------|-------------|----------|
+| **Scatter Geo** | `[Geo]` | lat, lon columns | Point locations |
+| **Choropleth** | `[Choro]` | country/state codes + values | Regional statistics |
+| **Globe** | `[Globe]` | lat, lon columns | Global view |
+
+**Creating a Geographic Scatter:**
+
+```
+1. Load demo data (has lat, lon columns)
+2. Click [Geo]
+3. Generated code:
+   fig = px.scatter_geo(demo_data, lat='lat', lon='lon')
+4. Points appear on world map!
+
+Customize:
+- Add color: color='country'
+- Add size: size='signal'
+- Change projection: fig.update_geos(projection_type="natural earth")
+```
+
+**Creating a Choropleth (Colored Regions):**
+
+```python
+# The app generates this for choropleth:
+fig = px.choropleth(demo_data, 
+                    locations='iso_alpha',  # Country codes like 'USA', 'GBR'
+                    color='signal',         # Values to show
+                    hover_name='country')   # On-hover label
+```
+
+---
+
+### 5.2 Property Editing System - Fine-Tune Everything
+
+> 💡 **Tips:** The Property Inspector is like Photoshop's properties panel for charts. Every visual aspect can be adjusted without writing code!
 
 The Property Inspector provides fine-grained control over every visual aspect of the figure.
 
-#### 5.2.1 Trace Properties (35+ Properties)
+#### 5.2.1 How to Use the Property Inspector
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ PROPERTY INSPECTOR WORKFLOW                                         │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Step 1: Select What to Edit                                        │
+│  ┌─────────────────────────────────────────┐                       │
+│  │ Element dropdown shows:                  │                       │
+│  │ • Figure Settings (global)               │                       │
+│  │ • Trace 0: scatter                       │                       │
+│  │ • Trace 1: line                          │                       │
+│  │ • Shape 0: rect                          │                       │
+│  │ • Annot 0: "My Label"                    │                       │
+│  └─────────────────────────────────────────┘                       │
+│                                                                     │
+│  Step 2: Change Properties                                          │
+│  ┌─────────────────────────────────────────┐                       │
+│  │ Different controls appear based on what │                       │
+│  │ you selected:                           │                       │
+│  │                                          │                       │
+│  │ For Trace:                               │                       │
+│  │   Color: [  red  ▼]                      │                       │
+│  │   Size:  [   10   ]                      │                       │
+│  │   Symbol:[circle ▼]                      │                       │
+│  │                                          │                       │
+│  │ For Figure:                              │                       │
+│  │   Title: [My Chart     ]                │                       │
+│  │   Theme: [plotly_white▼]                │                       │
+│  │   X Title:[Time        ]                │                       │
+│  └─────────────────────────────────────────┘                       │
+│                                                                     │
+│  Step 3: Apply Changes                                              │
+│  ┌─────────────────────────────────────────┐                       │
+│  │ Click [Apply Changes] button             │                       │
+│  │ Changes appear immediately on canvas!    │                       │
+│  └─────────────────────────────────────────┘                       │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+#### 5.2.2 Trace Properties - 35+ Customization Options
 
 **Line Properties:**
 
-| Property | Type | Values | Description |
-|----------|------|--------|-------------|
-| `line.color` | Color | Hex/RGB/Named | Line color |
-| `line.width` | Number | 0-20 | Line thickness in pixels |
-| `line.dash` | Dropdown | solid, dot, dash, longdash, dashdot | Line style pattern |
-| `line.shape` | Dropdown | linear, spline, hv, vh, hvh, vhv | Interpolation method |
+| Property | Control Type | Options | What It Does |
+|----------|-------------|---------|--------------|
+| Color | Dropdown | 17 named colors | Line/marker color |
+| Size | Number | 1-50 | Marker diameter in pixels |
+| Opacity | Number | 0-1 | Transparency (0=invisible) |
+| Symbol | Dropdown | 10 shapes | Marker shape |
+| Line Width | Number | 0-20 | Line thickness |
+| Dash Style | Dropdown | solid, dot, dash, etc. | Line pattern |
+| Mode | Dropdown | lines, markers, lines+markers | What to show |
+| Fill | Dropdown | none, tozeroy, tonexty | Area filling |
 
-**Marker Properties:**
-
-| Property | Type | Values | Description |
-|----------|------|--------|-------------|
-| `marker.color` | Color | Hex/RGB/Named | Marker fill color |
-| `marker.size` | Number | 1-50 | Marker diameter in pixels |
-| `marker.symbol` | Dropdown | 40+ symbols | Marker shape |
-| `marker.opacity` | Number | 0-1 | Marker transparency |
-| `marker.line.color` | Color | Hex/RGB/Named | Marker border color |
-| `marker.line.width` | Number | 0-10 | Marker border width |
-
-**Available Marker Symbols:**
+**Available Colors (17 Named):**
 
 ```
-Basic:     circle, square, diamond, cross, x
-Triangles: triangle-up, triangle-down, triangle-left, triangle-right
-Extended:  star, hexagon, pentagon, octagon, hexagram
-Open:      circle-open, square-open, diamond-open
-Dot:       circle-dot, square-dot, diamond-dot
-Combined:  circle-cross, circle-x, square-cross, square-x
+Basic:    black, white, red, green, blue, cyan, magenta, yellow
+Extended: orange, purple, grey, brown, pink, gold, teal, navy
+Special:  transparent
 ```
 
-**Text Properties (for traces with text):**
-
-| Property | Type | Values | Description |
-|----------|------|--------|-------------|
-| `textposition` | Dropdown | top, bottom, left, right, etc. | Text placement |
-| `textfont.size` | Number | 8-72 | Font size |
-| `textfont.color` | Color | Hex/RGB/Named | Text color |
-| `textfont.family` | Text | Font name | Font family |
-
-#### 5.2.2 Layout Properties
-
-**Title and Axes:**
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `title.text` | Text | Figure title |
-| `title.font.size` | Number | Title font size |
-| `title.font.color` | Color | Title color |
-| `xaxis.title.text` | Text | X axis label |
-| `yaxis.title.text` | Text | Y axis label |
-| `xaxis.range` | Array | [min, max] for X axis |
-| `yaxis.range` | Array | [min, max] for Y axis |
-
-**Legend:**
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `showlegend` | Boolean | Show/hide legend |
-| `legend.x` | Number | Legend X position (0-1) |
-| `legend.y` | Number | Legend Y position (0-1) |
-| `legend.orientation` | Dropdown | 'h' or 'v' |
-| `legend.bgcolor` | Color | Legend background |
-
-**Grid and Axes:**
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `xaxis.showgrid` | Boolean | Show X grid lines |
-| `yaxis.showgrid` | Boolean | Show Y grid lines |
-| `xaxis.gridcolor` | Color | X grid color |
-| `yaxis.gridcolor` | Color | Y grid color |
-| `xaxis.zeroline` | Boolean | Show X zero line |
-| `yaxis.zeroline` | Boolean | Show Y zero line |
-
-#### 5.2.3 Annotation Properties
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `text` | Text | Annotation text (supports HTML) |
-| `x` | Number | X position |
-| `y` | Number | Y position |
-| `xref` | Dropdown | 'x', 'paper' - coordinate reference |
-| `yref` | Dropdown | 'y', 'paper' - coordinate reference |
-| `showarrow` | Boolean | Display arrow |
-| `arrowhead` | Number | Arrow head style (0-8) |
-| `arrowsize` | Number | Arrow head size multiplier |
-| `arrowwidth` | Number | Arrow line width |
-| `arrowcolor` | Color | Arrow color |
-| `ax` | Number | Arrow X offset |
-| `ay` | Number | Arrow Y offset |
-| `font.size` | Number | Text font size |
-| `font.color` | Color | Text color |
-| `bgcolor` | Color | Background color |
-| `bordercolor` | Color | Border color |
-| `borderwidth` | Number | Border width |
-
-#### 5.2.4 Shape Properties
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `type` | Dropdown | rect, circle, line, path |
-| `x0`, `y0` | Number | Start coordinates |
-| `x1`, `y1` | Number | End coordinates |
-| `line.color` | Color | Shape outline color |
-| `line.width` | Number | Outline width |
-| `line.dash` | Dropdown | Line style |
-| `fillcolor` | Color | Fill color |
-| `opacity` | Number | Transparency (0-1) |
-| `layer` | Dropdown | 'above', 'below' traces |
-
-### 5.3 Drawing and Annotation Tools
-
-PyFigureEditor provides MATLAB-style drawing tools for adding visual elements.
-
-#### 5.3.1 Drawing Mode Toolbar
-
-| Button | Mode | Function |
-|--------|------|----------|
-| **Select** | `select` | Default selection mode |
-| **Zoom** | `zoom` | Click-drag to zoom region |
-| **Pan** | `pan` | Click-drag to move view |
-| **Draw Line** | `drawline` | Draw straight lines |
-| **Draw Rect** | `drawrect` | Draw rectangles |
-| **Draw Circle** | `drawcircle` | Draw circles/ellipses |
-| **Draw Path** | `drawopenpath` | Draw freeform paths |
-| **Eraser** | `eraseshape` | Delete drawn shapes |
-
-#### 5.3.2 Adding Text Annotations
-
-**Method 1: Via Modal Dialog**
+**Available Marker Symbols (10 Basic):**
 
 ```
-1. Click "Add Text" button in toolbar
-2. Modal dialog opens with fields:
-   - Text: Enter your annotation text
-   - X Position: Click graph or enter value
-   - Y Position: Click graph or enter value
-   - Show Arrow: Checkbox
-   - Font Size: Number input
-   - Font Color: Color picker
-3. Click "Add Annotation"
-4. Annotation appears on graph
+┌─────────────────────────────────────────────────────────────────────┐
+│ MARKER SYMBOLS                                                      │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  circle    ●       square    ■       diamond   ◆                   │
+│                                                                     │
+│  cross     +       x         ×       triangle-up  ▲                │
+│                                                                     │
+│  triangle-down ▼   star      ★       hexagram  ✡                   │
+│                                                                     │
+│  pentagon  ⬠                                                        │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-**Method 2: Direct on Graph (Editable Mode)**
+#### 5.2.3 Figure (Layout) Properties
+
+| Property | Control | What It Does |
+|----------|---------|--------------|
+| Title | Text input | Figure title text |
+| Width | Number | Figure width in pixels |
+| Height | Number | Figure height in pixels |
+| Plot Color | Color dropdown | Background of plot area |
+| Paper Color | Color dropdown | Background outside plot |
+| Font | Font dropdown | Global font family |
+| Font Size | Number | Global base font size |
+| Theme | Dropdown | Apply complete template |
+| X Title | Text input | X-axis label |
+| Y Title | Text input | Y-axis label |
+| Legend | Show/Hide | Toggle legend visibility |
+| Legend Dir | v/h | Vertical or horizontal |
+| Legend Pos | Dropdown | Corner placement |
+| Hover Mode | Dropdown | How tooltips appear |
+| Grid X/Y | Show/Hide | Toggle grid lines |
+| Bar Mode | Dropdown | grouped, stacked, etc. |
+| X/Y Scale | linear/log | Axis scale type |
+| Spikes | Show/Hide | Crosshair lines |
+| Zero Line | Show/Hide | Line at y=0 |
+
+#### 5.2.4 Annotation Properties
+
+| Property | Control | What It Does |
+|----------|---------|--------------|
+| Text | Text input | Annotation content |
+| Color | Color dropdown | Text color |
+| Size | Number | Font size |
+| Font | Font dropdown | Font family |
+| X, Y | Number | Position |
+| Arrow | Show/Hide | Display arrow |
+| Bg Color | Color | Background fill |
+| Angle | Number | Text rotation |
+
+#### 5.2.5 Shape Properties
+
+| Property | Control | What It Does |
+|----------|---------|--------------|
+| Line Color | Color | Outline color |
+| Line Width | Number | Outline thickness |
+| Opacity | Number | Transparency |
+| Dash | Dropdown | Line pattern |
+| Fill Color | Color | Interior fill |
+
+### 5.3 Drawing and Annotation Tools - Make Your Charts Talk
+
+> 💡 **Tips:** Annotations and shapes help you **tell a story** with your data. A well-placed arrow pointing to an outlier with a note like "Equipment malfunction on this day" can make your visualization much more meaningful!
+
+PyFigureEditor provides MATLAB-style drawing tools for adding visual elements directly on your charts.
+
+#### 5.3.1 The Drawing Toolbar - Your Creative Tools
 
 ```
-1. Double-click on the graph at desired location
-2. Text input cursor appears
-3. Type your annotation
-4. Click outside to confirm
+┌─────────────────────────────────────────────────────────────────────┐
+│ ANNOTATE TAB - DRAWING TOOLS                                        │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Shape Drawing:                                                     │
+│  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐                          │
+│  │Line │ │Rect │ │Circle│ │Free │ │Poly │                          │
+│  └─────┘ └─────┘ └─────┘ └─────┘ └─────┘                          │
+│     │       │        │       │       │                              │
+│     ▼       ▼        ▼       ▼       ▼                              │
+│  Draw    Draw    Draw     Draw    Draw                              │
+│  straight rectangles circles  freehand closed                       │
+│  lines                       paths   polygons                       │
+│                                                                     │
+│  Text & Images:                                                     │
+│  ┌───────────┐ ┌───────────┐                                       │
+│  │ Add Text  │ │ Add Image │                                       │
+│  │ Annotation│ │ Upload    │                                       │
+│  └───────────┘ └───────────┘                                       │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-#### 5.3.3 Adding Arrows
+**How Drawing Works:**
 
 ```
-1. Click "Add Text" button
-2. Enable "Show Arrow" checkbox
-3. Set arrow properties:
-   - Arrow Head Style (0-8)
-   - Arrow Size
-   - Arrow Color
-4. The annotation will display with an arrow
-   pointing from (ax, ay) offset to (x, y) position
+1. Click a drawing tool button (e.g., [Rect])
+2. The canvas enters "drawing mode" (cursor changes)
+3. Click and drag on the canvas to draw
+4. Release mouse to complete the shape
+5. Shape appears and can be edited in Property Inspector!
 ```
 
-#### 5.3.4 Adding Images
+#### 5.3.2 Adding Text Annotations - Step by Step
 
 ```
-1. Click "Add Image" button
-2. Upload image file (PNG, JPG, SVG supported)
-3. Configure placement:
-   - X Position, Y Position
-   - Width, Height (in axis units or paper fraction)
-   - Layer: Above or Below traces
-   - Opacity
-4. Click "Add Image"
-5. Image appears as figure background/overlay
+┌─────────────────────────────────────────────────────────────────────┐
+│ ADDING A TEXT ANNOTATION                                            │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Step 1: Click [Add Text] in ANNOTATE tab                          │
+│          A modal dialog opens                                       │
+│                                                                     │
+│  Step 2: Fill in the dialog                                         │
+│  ┌─────────────────────────────────────────┐                       │
+│  │ Text:    [Important finding!       ]    │                       │
+│  │ X Pos:   [0.5    ] (or click on graph)  │                       │
+│  │ Y Pos:   [0.5    ] (or click on graph)  │                       │
+│  │ Arrow:   [✓] Show Arrow                 │                       │
+│  └─────────────────────────────────────────┘                       │
+│                                                                     │
+│  Step 3: Click [Confirm]                                            │
+│          Annotation appears on canvas!                              │
+│                                                                     │
+│  Step 4: Customize in Property Inspector                            │
+│  ┌─────────────────────────────────────────┐                       │
+│  │ Select: "Annot 0: Important finding!"   │                       │
+│  │                                          │                       │
+│  │ Color:    [red   ▼]                      │                       │
+│  │ Size:     [  14   ]                      │                       │
+│  │ Font:     [Arial ▼]                      │                       │
+│  │ Bg Color: [white ▼]                      │                       │
+│  │                                          │                       │
+│  │ [Apply Changes]                          │                       │
+│  └─────────────────────────────────────────┘                       │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-### 5.4 Session Management
-
-PyFigureEditor allows saving and restoring complete editing sessions.
-
-#### 5.4.1 Saving Sessions
-
-**What Gets Saved:**
-
-```json
-{
-  "version": "1.0",
-  "timestamp": "2024-12-01T10:30:00",
-  "figure": {
-    "data": [...],
-    "layout": {...}
-  },
-  "datasets": {
-    "trace-0": {"x": [...], "y": [...]},
-    "trace-1": {"x": [...], "y": [...]}
-  },
-  "history": {
-    "undo": [...],
-    "redo": [...]
-  },
-  "metadata": {
-    "name": "My Analysis",
-    "author": "User",
-    "description": "Quarterly sales analysis"
-  }
-}
-```
-
-**Saving Process:**
-
-```
-1. Click "Save" button in toolbar
-2. Save dialog opens
-3. Enter session name (optional)
-4. Click "Download Session"
-5. JSON file downloads to your computer
-   Filename: pyfigureeditor_session_YYYYMMDD_HHMMSS.json
-```
-
-#### 5.4.2 Loading Sessions
-
-```
-1. Click "Load" button in toolbar
-2. Load dialog opens
-3. Click "Choose File" or drag-and-drop
-4. Select a previously saved .json session file
-5. Click "Load Session"
-6. Figure and all data are restored
-```
-
-#### 5.4.3 Session Compatibility
-
-| Version | Compatible With | Notes |
-|---------|-----------------|-------|
-| 1.0 | Current | Full support |
-| Future | Backward compatible | Planned versioning |
-
-### 5.5 Code Export
-
-Generate reproducible Python code from your figure.
-
-#### 5.5.1 Export Formats
-
-**Plotly Graph Objects (Default):**
+**Pro Tips for Annotations:**
 
 ```python
-import plotly.graph_objects as go
+# Annotations support basic HTML! Try these in the text field:
 
-fig = go.Figure()
+"Sales <b>increased</b> by 20%"      # Bold
+"Temperature <i>dropped</i>"          # Italic
+"Break<br>line"                       # Line break
+"<sup>2</sup>nd peak"                 # Superscript
+"H<sub>2</sub>O"                      # Subscript
+```
 
-fig.add_trace(go.Scatter(
-    x=[1, 2, 3, 4, 5],
-    y=[2, 4, 1, 5, 3],
-    mode='lines+markers',
-    name='Data Series 1',
-    line=dict(color='#1f77b4', width=2, dash='solid'),
-    marker=dict(size=8, symbol='circle', color='#1f77b4')
-))
+#### 5.3.3 Adding Images - Overlay Reference Pictures
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ ADDING A BACKGROUND IMAGE                                           │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Use Case: Overlay a reference image under your data                │
+│  Example: Trace data points on top of a map image                   │
+│                                                                     │
+│  Step 1: Click [Add Image] (Upload button)                         │
+│                                                                     │
+│  Step 2: Select an image file                                       │
+│          Supported: PNG, JPG, SVG                                  │
+│                                                                     │
+│  Step 3: Image appears as background layer                          │
+│          Default: 50% opacity, stretched to fit                    │
+│                                                                     │
+│  Step 4: Adjust in Property Inspector                               │
+│  ┌─────────────────────────────────────────┐                       │
+│  │ Select: "Image 0"                        │                       │
+│  │                                          │                       │
+│  │ Opacity: [  0.3  ] (more transparent)   │                       │
+│  │ Size X:  [  1.0  ] (paper fraction)     │                       │
+│  │ Size Y:  [  1.0  ]                       │                       │
+│  │ X:       [  0    ]                       │                       │
+│  │ Y:       [  1    ]                       │                       │
+│  │                                          │                       │
+│  │ [Apply Changes]                          │                       │
+│  └─────────────────────────────────────────┘                       │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 5.4 Data Management - Load, Edit, Clean
+
+> 💡 **Tips:** Data management is the foundation of visualization. PyFigureEditor lets you load CSV files, generate demo data, view statistics, and even edit data directly in the app!
+
+#### 5.4.1 Loading Data - Three Options
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ DATA LOADING OPTIONS                                                │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Option 1: Import Your Own CSV                                      │
+│  ┌─────────────────────────────────────────┐                       │
+│  │ [Import CSV] → Select file → Done!      │                       │
+│  │                                          │                       │
+│  │ Supported: .csv files with headers      │                       │
+│  │ Auto-detects: Column types              │                       │
+│  └─────────────────────────────────────────┘                       │
+│                                                                     │
+│  Option 2: Generate Demo Data                                       │
+│  ┌─────────────────────────────────────────┐                       │
+│  │ [Load Demo] → Instant 200-row dataset!  │                       │
+│  │                                          │                       │
+│  │ Contains: numeric, categorical, dates,  │                       │
+│  │          lat/lon, OHLC data for testing │                       │
+│  │          ALL chart types!               │                       │
+│  └─────────────────────────────────────────┘                       │
+│                                                                     │
+│  Option 3: Code Your Own Data                                       │
+│  ┌─────────────────────────────────────────┐                       │
+│  │ In Command Window:                       │                       │
+│  │ my_data = pd.DataFrame({                │                       │
+│  │     'x': [1, 2, 3, 4, 5],               │                       │
+│  │     'y': [10, 20, 15, 25, 30]           │                       │
+│  │ })                                       │                       │
+│  │ figure_store.add_dataframe('my_data',   │                       │
+│  │                            my_data)     │                       │
+│  └─────────────────────────────────────────┘                       │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+#### 5.4.2 Viewing Data - Three Inspection Modes
+
+```
+DATA Tab buttons:
+
+[View Table] → See raw data (first 100 rows, editable!)
+[View Stats] → See statistical summary (count, mean, std, etc.)
+[View Types] → See column data types (int64, float64, object, etc.)
+```
+
+**Example Statistics Output:**
+
+```
+┌──────────┬───────┬──────────┬───────────┬─────────┐
+│ Column   │ count │ mean     │ std       │ min     │
+├──────────┼───────┼──────────┼───────────┼─────────┤
+│ signal   │ 200   │ 0.0234   │ 3.4521    │ -9.8765 │
+│ x_val    │ 200   │ 0.1456   │ 10.0213   │ -28.234 │
+│ y_val    │ 200   │ -0.0567  │ 9.8765    │ -25.123 │
+└──────────┴───────┴──────────┴───────────┴─────────┘
+```
+
+#### 5.4.3 Editing Data - Direct Manipulation
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ DATA EDITING FEATURES                                               │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  1. Edit Cells in Table View                                        │
+│     - Click [View Table]                                            │
+│     - Click any cell to edit                                        │
+│     - Type new value                                                │
+│     - Changes sync automatically to data & chart!                  │
+│                                                                     │
+│  2. Delete Rows                                                     │
+│     - Each row has a 🗑️ delete button                              │
+│     - Click to remove that row                                     │
+│     - Chart updates automatically                                   │
+│                                                                     │
+│  3. Remove Selected Points (Lasso Selection)                        │
+│     - Use lasso tool on canvas to select points                    │
+│     - Click [Remove Selected] in DATA tab                          │
+│     - Points removed from BOTH chart AND data!                     │
+│                                                                     │
+│  4. Clean Data                                                      │
+│     - Click [Clean NA] to:                                         │
+│       • Convert string numbers to actual numbers                   │
+│       • Remove rows with missing values (NaN)                      │
+│                                                                     │
+│  5. Delete Entire Dataset                                           │
+│     - Select dataset in dropdown                                   │
+│     - Click [Delete Data]                                          │
+│     - Dataset and associated traces removed                        │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 5.5 Session Management - Save and Share Your Work
+
+> 💡 **Tips:** Session saving lets you stop working, close the browser, and come back later to exactly where you left off! It also lets you share your visualization work with colleagues.
+
+#### 5.5.1 What Gets Saved in a Session?
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ SESSION FILE CONTENTS (.json)                                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ✅ SAVED:                                                          │
+│  • Complete figure (all traces, shapes, annotations)                │
+│  • All layout settings (title, axes, theme, etc.)                  │
+│  • Drawing history for undo/redo                                    │
+│                                                                     │
+│  ⚠️ NOT SAVED (for now):                                            │
+│  • Loaded CSV data (re-import if needed)                           │
+│  • Demo data (regenerate if needed)                                │
+│  • Custom code in Command Window                                   │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+#### 5.5.2 Saving Your Work
+
+```
+Step 1: Click [Save] in HOME tab
+Step 2: Browser downloads: session.json
+Step 3: Store the file somewhere safe!
+
+Pro tip: Rename with meaningful name like:
+  "quarterly_sales_analysis_2024Q3.json"
+```
+
+#### 5.5.3 Loading a Previous Session
+
+```
+Step 1: Click [Load] in HOME tab
+Step 2: Select your .json session file
+Step 3: Figure is restored exactly as saved!
+        (You may need to reload data separately)
+```
+
+---
+
+### 5.6 Code Export - Take Your Work Anywhere
+
+> 💡 **Tips:** One of the BEST features! After creating your perfect visualization in the GUI, you can export the code to use in your own Python scripts, Jupyter notebooks, or share with colleagues who don't have PyFigureEditor!
+
+#### 5.6.1 How Code Export Works
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ CODE EXPORT FLOW                                                    │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Your visual figure → Python code that recreates it                │
+│                                                                     │
+│  ┌────────────────────┐      ┌────────────────────────┐           │
+│  │   📊               │      │ import plotly.express  │           │
+│  │  Your beautiful    │  →   │ fig = px.scatter(...)  │           │
+│  │    chart on        │      │ fig.update_layout(...) │           │
+│  │     canvas         │      │ fig.show()             │           │
+│  └────────────────────┘      └────────────────────────┘           │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+#### 5.6.2 The Generated Code
+
+When you create a scatter plot and click export, you get:
+
+```python
+import plotly.express as px
+import pandas as pd
+
+# Your data (you'll need to provide this)
+# df = pd.read_csv('your_data.csv')
+
+# Generated code from PyFigureEditor
+fig = px.scatter(demo_abc123, x='x_val', y='y_val')
+
+# Customizations applied in the GUI
+fig.update_traces(
+    marker=dict(color='red', size=12, symbol='circle'),
+    opacity=0.8
+)
 
 fig.update_layout(
-    title=dict(text='My Figure', font=dict(size=20)),
-    xaxis=dict(title=dict(text='X Axis')),
-    yaxis=dict(title=dict(text='Y Axis')),
+    title=dict(text='My Analysis', font=dict(size=20)),
     template='plotly_white',
+    xaxis_title='X Values',
+    yaxis_title='Y Values',
     showlegend=True
 )
 
 fig.show()
 ```
 
-**Plotly Express (Concise):**
-
-```python
-import plotly.express as px
-import pandas as pd
-
-df = pd.DataFrame({
-    'x': [1, 2, 3, 4, 5],
-    'y': [2, 4, 1, 5, 3],
-    'series': ['Data'] * 5
-})
-
-fig = px.scatter(df, x='x', y='y', title='My Figure')
-fig.update_traces(marker=dict(size=8, color='#1f77b4'))
-fig.show()
-```
-
-#### 5.5.2 Export Process
+#### 5.6.3 Using Exported Code
 
 ```
-1. Create and customize your figure
-2. Click "Export Code" button
-3. Code modal opens with generated Python code
-4. Options:
-   - Copy to Clipboard: Click copy button
-   - Download: Click download button (.py file)
-5. Code is ready to run in any Python environment
+1. Copy the code from Command Window
+2. Paste into your Jupyter notebook or .py file
+3. Replace data variable with your actual data
+4. Run and enjoy your reproducible visualization!
 ```
 
-### 5.6 Undo/Redo System
+---
 
-Full undo/redo support for all operations.
+### 5.7 Undo/Redo System - Never Lose Your Work
 
-#### 5.6.1 Supported Operations
+> 💡 **Tips:** Made a mistake? Don't worry! The undo/redo system remembers up to 50 steps, so you can always go back!
 
-| Operation | Undoable | Notes |
-|-----------|----------|-------|
-| Add trace | ✅ | Removes added trace |
-| Delete trace | ✅ | Restores deleted trace |
-| Property change | ✅ | Reverts property value |
-| Add annotation | ✅ | Removes annotation |
-| Add shape | ✅ | Removes shape |
-| Template change | ✅ | Reverts template |
-| Drawing | ✅ | Removes drawn shape |
+#### 5.7.1 What Can Be Undone?
 
-#### 5.6.2 Usage
+| Action | Undoable? | Notes |
+|--------|-----------|-------|
+| Add trace | ✅ Yes | Removes the added trace |
+| Delete trace | ✅ Yes | Restores the deleted trace |
+| Change color | ✅ Yes | Reverts to previous color |
+| Change theme | ✅ Yes | Reverts template |
+| Add annotation | ✅ Yes | Removes annotation |
+| Draw shape | ✅ Yes | Removes shape |
+| Move element | ✅ Yes | Returns to original position |
+| Delete data | ⚠️ Partial | Chart undone, data not restored |
+
+#### 5.7.2 Using Undo/Redo
 
 ```
-Undo: Click "Undo" button or press Ctrl+Z
-Redo: Click "Redo" button or press Ctrl+Y
+Method 1: Buttons
+  [Undo] ← in HOME tab
+  [Redo] → in HOME tab
 
-History Depth: Up to 50 operations
-Memory: ~5-10KB per state (depends on figure complexity)
+Method 2: (If supported by your browser)
+  Ctrl+Z = Undo
+  Ctrl+Y = Redo
 ```
 
-#### 5.6.3 Behavior Notes
+#### 5.7.3 Understanding the History Stack
 
-- **New Action After Undo:** Clears redo stack (standard behavior)
-- **Load Session:** Replaces history (session has its own history)
-- **New Figure:** Clears all history
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ HISTORY STACK EXAMPLE                                               │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Actions you take:                                                  │
+│  1. Load data         → State 1 saved                              │
+│  2. Add scatter       → State 2 saved                              │
+│  3. Change to red     → State 3 saved                              │
+│  4. Add title         → State 4 saved (current)                    │
+│                                                                     │
+│  UNDO Stack: [1, 2, 3, 4]    REDO Stack: []                        │
+│                                                                     │
+│  Click Undo:                                                        │
+│  UNDO Stack: [1, 2, 3]       REDO Stack: [4]                       │
+│  (Title removed, can redo to restore)                              │
+│                                                                     │
+│  Click Undo again:                                                  │
+│  UNDO Stack: [1, 2]          REDO Stack: [3, 4]                    │
+│  (Color back to default)                                           │
+│                                                                     │
+│  Click Redo:                                                        │
+│  UNDO Stack: [1, 2, 3]       REDO Stack: [4]                       │
+│  (Red color restored)                                              │
+│                                                                     │
+│  If you now make a NEW action (add line):                          │
+│  UNDO Stack: [1, 2, 3, 5]    REDO Stack: [] ← cleared!             │
+│  (Can't redo state 4 anymore - standard undo behavior)             │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
-### 5.7 Template System
+---
 
-PyFigureEditor supports 10 built-in Plotly templates.
+### 5.8 Template System - Instant Professional Styling
 
-#### 5.7.1 Available Templates
+> 💡 **Tips:** Templates are like Instagram filters for your charts. One click and your entire visualization gets a coordinated color scheme and style!
 
-| Template | Description | Best For |
+#### 5.8.1 Available Templates (10 Built-in)
+
+| Template | Visual Style | Best For |
 |----------|-------------|----------|
-| `plotly` | Default Plotly style | General use |
+| `plotly` | Default Plotly colors | General use |
 | `plotly_white` | White background | Publications, reports |
-| `plotly_dark` | Dark theme | Presentations, dashboards |
+| `plotly_dark` | Dark background | Presentations, dashboards |
 | `ggplot2` | R ggplot2 style | Statistical graphics |
-| `seaborn` | Seaborn style | Data science |
-| `simple_white` | Minimal white | Clean publications |
-| `presentation` | Large fonts | Slideshows |
-| `xgridoff` | No vertical grid | Time series |
-| `ygridoff` | No horizontal grid | Bar charts |
-| `gridon` | Full grid | Technical plots |
+| `seaborn` | Python seaborn style | Data science |
+| `simple_white` | Minimal, clean | Academic papers |
+| `presentation` | Large fonts, bold | Slideshows |
+| `xgridoff` | No vertical grid | Time series focus |
+| `ygridoff` | No horizontal grid | Bar chart focus |
+| `gridon` | Full grid visible | Technical/engineering |
 
-#### 5.7.2 Applying Templates
+#### 5.8.2 Applying a Template
 
 ```
-1. Select template from "Template" dropdown in toolbar
-2. Template applies immediately to current figure
-3. All existing traces inherit new template colors
-4. Can be changed at any time without data loss
+Method 1: Property Inspector
+  - Select "Figure Settings"
+  - Find "Theme" dropdown
+  - Select template
+  - Click [Apply Changes]
+
+Method 2: Command Window
+  fig.update_layout(template='plotly_dark')
+```
+
+#### 5.8.3 Template Visual Comparison
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ TEMPLATE COMPARISON                                                 │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  plotly_white:        plotly_dark:        ggplot2:                 │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐         │
+│  │ ░░░░░░░░░░░░ │    │ ▓▓▓▓▓▓▓▓▓▓▓▓ │    │ ▒▒▒▒▒▒▒▒▒▒▒▒ │         │
+│  │ ░░ ● ●  ●░░ │    │ ▓▓ ○ ○  ○▓▓ │    │ ▒▒ ◆ ◆  ◆▒▒ │         │
+│  │ ░░░●░░●░░░░ │    │ ▓▓▓○▓▓○▓▓▓▓ │    │ ▒▒▒◆▒▒◆▒▒▒▒ │         │
+│  │ ░░░░░●░░░░░ │    │ ▓▓▓▓▓○▓▓▓▓▓ │    │ ▒▒▒▒▒◆▒▒▒▒▒ │         │
+│  └──────────────┘    └──────────────┘    └──────────────┘         │
+│  White bg, blue      Dark bg, bright    Gray bg, bold            │
+│  markers             markers            markers                   │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 6. Deployment Guide
+### 5.9 View Tools - Navigate Your Visualization
 
-This chapter provides comprehensive instructions for deploying PyFigureEditor in different environments, from local development to production servers.
-
-### 6.1 Two Deployment Versions
-
-PyFigureEditor exists in two forms optimized for different use cases:
-
-| Version | File | Purpose | Best For |
-|---------|------|---------|----------|
-| **Jupyter Notebook** | `Final_Project_Implementation.ipynb` | Interactive development | Learning, experimentation, Google Colab |
-| **Server Application** | `app.py` | Production deployment | PythonAnywhere, Heroku, AWS |
-
-### 6.2 Local Development Setup
-
-#### 6.2.1 Prerequisites
-
-**System Requirements:**
-
-| Component | Minimum | Recommended |
-|-----------|---------|-------------|
-| Python | 3.8+ | 3.10+ |
-| RAM | 2 GB | 4 GB |
-| Storage | 100 MB | 500 MB |
-| Browser | Modern (Chrome, Firefox, Edge) | Chrome 90+ |
-
-**Required Packages:**
-
-```bash
-# Core dependencies
-pip install dash>=2.17.0
-pip install plotly>=5.20.0
-pip install dash-bootstrap-components>=1.5.0
-pip install pandas>=2.0.0
-pip install numpy>=1.24.0
-
-# Or install all at once
-pip install dash plotly dash-bootstrap-components pandas numpy
-```
-
-#### 6.2.2 Running Locally
-
-**From Jupyter Notebook:**
-
-```python
-# In Final_Project_Implementation.ipynb
-# Run all cells in order
-# The app will start on http://127.0.0.1:8050
-
-# To change port:
-app.run(debug=True, port=8051)
-```
-
-**From Python Script:**
-
-```bash
-# Navigate to project directory
-cd "Final Project"
-
-# Run the application
-python app.py
-
-# Output:
-# Dash is running on http://127.0.0.1:8050/
-# * Running on http://127.0.0.1:8050
-# * Debug mode: on
-```
-
-#### 6.2.3 Development Mode Features
-
-When running with `debug=True`:
-
-| Feature | Description |
-|---------|-------------|
-| **Hot Reload** | Automatic restart on code changes |
-| **Error Display** | Detailed error messages in browser |
-| **Component Inspector** | Dash DevTools for debugging |
-| **Callback Graph** | Visualize callback dependencies |
-
-### 6.3 PythonAnywhere Deployment
-
-PythonAnywhere is the recommended platform for this project. The live deployment is available at:
-
-**🌐 https://zye.pythonanywhere.com/**
-
-#### 6.3.1 Account Setup
+#### 5.9.1 Navigation Controls (VIEW Tab)
 
 ```
-1. Go to https://www.pythonanywhere.com
-2. Sign up for a free account (or paid for more resources)
-3. Verify your email address
-4. Log in to your dashboard
+[Zoom] - Click+drag to zoom into a region
+[Pan]  - Click+drag to move around
+[Reset] - Return to original view (autoscale)
+[Inspector Toggle] - Show/hide right panel
 ```
 
-#### 6.3.2 File Upload
-
-**Method 1: Web Interface**
+#### 5.9.2 Interactive Features (Built into Canvas)
 
 ```
-1. Go to "Files" tab in PythonAnywhere
-2. Navigate to /home/yourusername/
-3. Create a new directory: mkdir myproject
-4. Upload files:
-   - app.py
-   - requirements.txt (if you have one)
+• Scroll wheel = Zoom in/out
+• Double-click = Reset zoom
+• Hover = See data values in tooltip
+• Click legend item = Toggle trace visibility
+• Drag legend = Reposition
 ```
-
-**Method 2: Git Clone**
-
-```bash
-# In PythonAnywhere Bash console:
-cd ~
-git clone https://github.com/yourusername/pyfigureeditor.git
-cd pyfigureeditor
-```
-
-#### 6.3.3 Web App Configuration
-
-```
-1. Go to "Web" tab
-2. Click "Add a new web app"
-3. Select "Manual configuration"
-4. Choose Python version (3.10 recommended)
-5. Note the path to your web app configuration
-```
-
-#### 6.3.4 WSGI Configuration
-
-Edit the WSGI configuration file (e.g., `/var/www/yourusername_pythonanywhere_com_wsgi.py`):
-
-```python
-# =============================================================================
-# WSGI Configuration for PythonAnywhere
-# =============================================================================
-
-import sys
-import os
-
-# Add your project directory to the path
-project_home = '/home/yourusername/myproject'
-if project_home not in sys.path:
-    sys.path.insert(0, project_home)
-
-# Set the working directory
-os.chdir(project_home)
-
-# Import your Dash app
-from app import app
-
-# Expose the Flask server for WSGI
-application = app.server
-```
-
-#### 6.3.5 Virtual Environment (Recommended)
-
-```bash
-# In PythonAnywhere Bash console:
-
-# Create virtual environment
-mkvirtualenv --python=/usr/bin/python3.10 myenv
-
-# Activate it
-workon myenv
-
-# Install dependencies
-pip install dash plotly dash-bootstrap-components pandas numpy
-
-# Verify installation
-pip list
-```
-
-Then update Web app settings to use the virtual environment:
-
-```
-Virtualenv: /home/yourusername/.virtualenvs/myenv
-```
-
-#### 6.3.6 Reload and Test
-
-```
-1. Go to "Web" tab
-2. Click green "Reload" button
-3. Visit your-username.pythonanywhere.com
-4. Your app should be live!
-```
-
-#### 6.3.7 Troubleshooting PythonAnywhere
-
-| Issue | Solution |
-|-------|----------|
-| 502 Bad Gateway | Check WSGI file for syntax errors |
-| Module not found | Install in correct virtualenv |
-| App not updating | Click "Reload" button |
-| Slow performance | Consider paid tier for more CPU |
-| Static files not loading | Configure static file mappings |
-
-**Checking Error Logs:**
-
-```
-1. Go to "Web" tab
-2. Click "Error log" link
-3. Check for Python tracebacks
-4. Fix issues and reload
-```
-
-### 6.4 Google Colab Deployment
-
-For users who want to run PyFigureEditor directly in Google Colab:
-
-#### 6.4.1 Colab-Specific Setup
-
-```python
-# Cell 1: Install dependencies
-!pip install dash plotly dash-bootstrap-components pandas numpy jupyter-dash
-
-# Cell 2: Import and configure
-from jupyter_dash import JupyterDash
-import dash
-from dash import dcc, html, Input, Output, State
-import dash_bootstrap_components as dbc
-import plotly.graph_objects as go
-
-# Use JupyterDash instead of dash.Dash
-app = JupyterDash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-
-# ... rest of app code ...
-
-# Cell N: Run the app
-app.run_server(mode='external')  # or mode='inline' for embedded view
-```
-
-#### 6.4.2 Colab Run Modes
-
-| Mode | Command | Description |
-|------|---------|-------------|
-| `external` | `app.run_server(mode='external')` | Opens in new tab |
-| `inline` | `app.run_server(mode='inline')` | Embeds below cell |
-| `jupyterlab` | `app.run_server(mode='jupyterlab')` | JupyterLab tab |
-
-#### 6.4.3 Colab Limitations
-
-- Session timeout after inactivity
-- No persistent storage (use Google Drive mount)
-- Public URL expires when runtime disconnects
-- Limited CPU/RAM on free tier
-
-### 6.5 Alternative Deployment Platforms
-
-#### 6.5.1 Heroku Deployment
-
-**Required Files:**
-
-`Procfile`:
-```
-web: gunicorn app:server
-```
-
-`requirements.txt`:
-```
-dash>=2.17.0
-plotly>=5.20.0
-dash-bootstrap-components>=1.5.0
-pandas>=2.0.0
-numpy>=1.24.0
-gunicorn>=21.0.0
-```
-
-`runtime.txt`:
-```
-python-3.10.12
-```
-
-**Deployment Commands:**
-
-```bash
-# Install Heroku CLI, then:
-heroku login
-heroku create pyfigureeditor-app
-git push heroku main
-heroku open
-```
-
-#### 6.5.2 AWS Elastic Beanstalk
-
-**application.py** (rename app.py):
-
-```python
-# AWS EB looks for 'application' variable
-from app import app
-application = app.server
-```
-
-**Deployment:**
-
-```bash
-eb init -p python-3.10 pyfigureeditor
-eb create pyfigureeditor-env
-eb deploy
-eb open
-```
-
-#### 6.5.3 Docker Deployment
-
-**Dockerfile:**
-
-```dockerfile
-FROM python:3.10-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-EXPOSE 8050
-
-CMD ["python", "app.py"]
-```
-
-**docker-compose.yml:**
-
-```yaml
-version: '3.8'
-services:
-  pyfigureeditor:
-    build: .
-    ports:
-      - "8050:8050"
-    environment:
-      - DASH_DEBUG=false
-```
-
-**Run:**
-
-```bash
-docker-compose up -d
-# Access at http://localhost:8050
-```
-
-### 6.6 Production Considerations
-
-#### 6.6.1 Security
-
-| Concern | Recommendation |
-|---------|----------------|
-| Input validation | Validate all user inputs server-side |
-| File uploads | Limit file size, validate file types |
-| HTTPS | Always use HTTPS in production |
-| Debug mode | Never use `debug=True` in production |
-
-#### 6.6.2 Performance Optimization
-
-```python
-# Production settings
-app.run(
-    debug=False,              # Disable debug mode
-    dev_tools_hot_reload=False,  # Disable hot reload
-    threaded=True,            # Enable threading
-)
-
-# For heavy loads, use gunicorn:
-# gunicorn app:server -w 4 -b 0.0.0.0:8050
-```
-
-#### 6.6.3 Monitoring
-
-- **PythonAnywhere:** Built-in CPU/bandwidth monitoring
-- **Heroku:** Heroku Metrics dashboard
-- **Custom:** Add logging to track usage
 
 ---
+
+### 5.10 Selection and Statistics - Interactive Analysis
+
+> 💡 **Tips:** This feature lets you select points directly on the chart and see statistics about your selection - like a quick "what's in this cluster?" analysis!
+
+#### 5.10.1 Lasso Selection
+
+```
+1. Use the lasso tool (in plotly modebar)
+2. Draw around points you want to analyze
+3. Console shows: ">>> Selected 42 points. Y-Stats: Mean=15.3, Min=2.1, Max=28.7"
+```
+
+#### 5.10.2 Box Selection
+
+```
+1. Use the box select tool
+2. Draw rectangle around points
+3. Same statistics appear in console
+```
+
+#### 5.10.3 Remove Selected Points
+
+```
+After selecting points:
+1. Go to DATA tab
+2. Click [Remove Selected]
+3. Points removed from BOTH:
+   - The visual chart
+   - The underlying dataset!
+```
